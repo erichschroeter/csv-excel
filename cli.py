@@ -36,7 +36,7 @@ def excel(args):
                 if 'columns' in sheet_config:
                     for colname, colcfg in sheet_config['columns'].items():
                         if 'width' in colcfg:
-                            logging.debug(f'Setting column "{colname}" to width of {colcfg["width"]}')
+                            logging.debug(f'Setting worksheet "{clean_title}" column "{colname}" to width of {colcfg["width"]}')
                             sheet.column_dimensions[colname].width = int(colcfg['width'])
 
         # Write the data to the worksheet
@@ -47,7 +47,7 @@ def excel(args):
     if 'Sheet' in wb.sheetnames:
         wb.remove(wb['Sheet'])
     # Save the workbook
-    wb.save('output.xlsx')
+    wb.save(args.output)
 
 
 class App:
@@ -69,6 +69,7 @@ class App:
         excel_parser = self.subparsers.add_parser('excel',
                                                    help='Generate or update an Excel file from multiple CSV files.',
                                                    formatter_class=RawTextArgumentDefaultsHelpFormatter)
+        excel_parser.add_argument('-o', '--output', default='RTK DCI DB Creator.xlsm', help='The output Excel file')
         excel_parser.add_argument('csv_files', nargs='+', help='The CSV files to include in the Excel file')
         excel_parser.set_defaults(func=excel)
 
