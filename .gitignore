@@ -164,4 +164,7 @@ cython_debug/
 
 worksheets/
 # Excel files
+*.xls
+*.xlb
 *.xlsx
+*.xlsm
