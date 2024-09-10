@@ -3,8 +3,13 @@ import csv
 import logging
 import os
 import textwrap
+from xlsxwriter import Workbook
+from xlsxwriter.utility import xl_cell_to_rowcol
 import yaml
-from openpyxl import Workbook
+
+
+def column_to_index(col):
+    return xl_cell_to_rowcol(f'{col.upper()}1')[0]
 
 
 def excel(args):
@@ -16,19 +21,20 @@ def excel(args):
             #     print(f"{key}: {value}")
 
     # Create a new workbook
-    wb = Workbook()
+    wb = Workbook(args.output)
 
     # Iterate over each CSV file
     for csv_file in args.csv_files:
         # Load the CSV file
         with open(csv_file, 'r') as f:
             reader = csv.reader(f)
-            data = list(reader)
+            csv_data = list(reader)
 
         # Create a new worksheet for this CSV file
         clean_title = os.path.basename(csv_file)  # don't inclue full path, just file name
         clean_title = os.path.splitext(clean_title)[0]  # remove extension
-        sheet = wb.create_sheet(title=clean_title)
+        sheet = wb.add_worksheet(name=clean_title)
+        logging.debug(f'Added worksheet "{clean_title}"')
 
         if config:
             if clean_title in config['sheets']:
@@ -36,18 +42,22 @@ def excel(args):
                 if 'columns' in sheet_config:
                     for colname, colcfg in sheet_config['columns'].items():
                         if 'width' in colcfg:
-                            logging.debug(f'Setting worksheet "{clean_title}" column "{colname}" to width of {colcfg["width"]}')
-                            sheet.column_dimensions[colname].width = int(colcfg['width'])
+                            width = int(colcfg['width'])
+                            logging.debug(f'Setting worksheet "{clean_title}" column "{colname}" to width of {width}')
+                            colindex = column_to_index(colname)
+                            sheet.set_column_pixels(colindex, colindex, width)
 
         # Write the data to the worksheet
-        for row in data:
-            sheet.append(row)
+        for row, data in enumerate(csv_data):
+            sheet.write_row(row, 0, data)
 
     # Delete the default sheet
     if 'Sheet' in wb.sheetnames:
         wb.remove(wb['Sheet'])
+    wb.add_vba_project(f'{os.path.dirname(os.path.abspath(__file__))}/vbaProject.bin')
     # Save the workbook
-    wb.save(args.output)
+    wb.close()
+    logging.debug(f'Saved "{args.output}"')
 
 
 class App:
@@ -69,7 +79,7 @@ class App:
         excel_parser = self.subparsers.add_parser('excel',
                                                    help='Generate or update an Excel file from multiple CSV files.',
                                                    formatter_class=RawTextArgumentDefaultsHelpFormatter)
-        excel_parser.add_argument('-o', '--output', default='RTK DCI DB Creator.xlsm', help='The output Excel file')
+        excel_parser.add_argument('-o', '--output', default='output.xlsm', help='The output Excel file')
         excel_parser.add_argument('csv_files', nargs='+', help='The CSV files to include in the Excel file')
         excel_parser.set_defaults(func=excel)
 
