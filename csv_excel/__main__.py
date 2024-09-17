@@ -73,8 +73,19 @@ def excel(args):
     # Save the workbook
     wb.close()
     logging.debug(f'Saved "{args.output}"')
-    importlib.import_module('csv_excel.rules.unique_id')
-    csv_excel.rules.unique_id.validate()
+    from os.path import dirname, basename, isfile, join
+    import glob
+    modules = glob.glob(join(dirname(__file__), 'rules/*.py'))
+    # modules = [join('csv_excel.rules.', m) for m in glob.glob(join(dirname(__file__), 'rules/*.py'))]
+    logging.warning(modules)
+    # rule_modules = [ basename(f)[:-3] for f in modules if isfile(f) and not f.endswith('__init__.py')]
+    rule_modules = [ f'csv_excel.rules.{basename(f)[:-3]}' for f in modules if isfile(f) and not f.endswith('__init__.py')]
+    logging.warning(rule_modules)
+    for rule_module in rule_modules:
+        # rule = importlib.import_module('csv_excel.rules.unique_id')
+        rule = importlib.import_module(rule_module)
+        v = getattr(rule, 'validate')
+        v(wb)
 
 
 class App:
