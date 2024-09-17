@@ -1,15 +1,28 @@
 import argparse
 import csv
+import importlib
 import logging
 import os
+import sys
 import textwrap
 from xlsxwriter import Workbook
 from xlsxwriter.utility import xl_cell_to_rowcol
 import yaml
 
 
-def column_to_index(col):
-    return xl_cell_to_rowcol(f'{col.upper()}1')[0]
+def column_to_index(col_str):
+    """
+    Convert a column cell reference notation to a zero indexed row and column.
+    For example, 'A' will assume 'A1' and return (0,0)
+
+    Args:
+       col_str:  The column for A1 style string.
+
+    Returns:
+        row, col: Zero indexed cell row and column indices.
+
+    """
+    return xl_cell_to_rowcol(f'{col_str.upper()}1')[0]
 
 
 def excel(args):
@@ -54,10 +67,14 @@ def excel(args):
     # Delete the default sheet
     if 'Sheet' in wb.sheetnames:
         wb.remove(wb['Sheet'])
-    wb.add_vba_project(f'{os.path.dirname(os.path.abspath(__file__))}/vbaProject.bin')
+    vbaproject_path = f'{os.path.dirname(os.path.abspath(__file__))}/vbaProject.bin'
+    logging.debug(f'Packing VBA project into Excel file: "{vbaproject_path}"')
+    wb.add_vba_project(vbaproject_path)
     # Save the workbook
     wb.close()
     logging.debug(f'Saved "{args.output}"')
+    importlib.import_module('csv_excel.rules.unique_id')
+    csv_excel.rules.unique_id.validate()
 
 
 class App:
@@ -87,8 +104,12 @@ class App:
         self.args = self.parser.parse_args(args)
 
     def run(self):
-        if not self.args:
-            self.parse_args()
+        try:
+            if not self.args:
+                self.parse_args()
+        except:
+            self.parser.print_help()
+            sys.exit(1)
         _init_logger(getattr(logging, self.args.verbosity.upper()))
         logging.debug(f'command-line args: {self.args}')
         self.args.func(self.args)
