@@ -25,19 +25,16 @@ def column_to_index(col_str):
     return xl_cell_to_rowcol(f'{col_str.upper()}1')[0]
 
 
-def excel(args):
-    config = None
-    if args.config:
-        with open(args.config, 'r') as yamlfile:
+def build_workbook(output_file, csv_files, config=None):
+    if config:
+        with open(config, 'r') as yamlfile:
             config = yaml.safe_load(yamlfile)
-            # for key, value in config.items():
-            #     print(f"{key}: {value}")
 
     # Create a new workbook
-    wb = Workbook(args.output)
+    wb = Workbook(output_file)
 
     # Iterate over each CSV file
-    for csv_file in args.csv_files:
+    for csv_file in csv_files:
         # Load the CSV file
         with open(csv_file, 'r') as f:
             reader = csv.reader(f)
@@ -47,7 +44,7 @@ def excel(args):
         clean_title = os.path.basename(csv_file)  # don't inclue full path, just file name
         clean_title = os.path.splitext(clean_title)[0]  # remove extension
         sheet = wb.add_worksheet(name=clean_title)
-        logging.debug(f'Added worksheet "{clean_title}"')
+        # logging.debug(f'Added worksheet "{clean_title}"')
 
         if config:
             if clean_title in config['sheets']:
@@ -56,7 +53,7 @@ def excel(args):
                     for colname, colcfg in sheet_config['columns'].items():
                         if 'width' in colcfg:
                             width = int(colcfg['width'])
-                            logging.debug(f'Setting worksheet "{clean_title}" column "{colname}" to width of {width}')
+                            # logging.debug(f'Setting worksheet "{clean_title}" column "{colname}" to width of {width}')
                             colindex = column_to_index(colname)
                             sheet.set_column_pixels(colindex, colindex, width)
 
@@ -70,22 +67,44 @@ def excel(args):
     vbaproject_path = f'{os.path.dirname(os.path.abspath(__file__))}/vbaProject.bin'
     logging.debug(f'Packing VBA project into Excel file: "{vbaproject_path}"')
     wb.add_vba_project(vbaproject_path)
+    return wb
+
+
+def excel(args):
+    """
+    Generates or updates an Excel file from multiple CSV files.
+
+    Args:
+        args:  The command line args.
+    """
+    wb = build_workbook(args.output, args.csv_files, args.config)
     # Save the workbook
     wb.close()
-    logging.debug(f'Saved "{args.output}"')
+
+
+def validate(args):
+    wb = build_workbook('output.xlsm', args.csv_files, args.config)
+
     from os.path import dirname, basename, isfile, join
     import glob
-    modules = glob.glob(join(dirname(__file__), 'rules/*.py'))
+    modules = glob.glob(join(args.rules_dir, '*.py'))
     # modules = [join('csv_excel.rules.', m) for m in glob.glob(join(dirname(__file__), 'rules/*.py'))]
-    logging.warning(modules)
+    logging.warning(f'Found modules: {modules}')
     # rule_modules = [ basename(f)[:-3] for f in modules if isfile(f) and not f.endswith('__init__.py')]
     rule_modules = [ f'csv_excel.rules.{basename(f)[:-3]}' for f in modules if isfile(f) and not f.endswith('__init__.py')]
-    logging.warning(rule_modules)
+    logging.warning(f'Checking rules: {rule_modules}')
     for rule_module in rule_modules:
         # rule = importlib.import_module('csv_excel.rules.unique_id')
         rule = importlib.import_module(rule_module)
         v = getattr(rule, 'validate')
         v(wb)
+
+
+def dir_path(string):
+    if os.path.isdir(string):
+        return string
+    else:
+        raise NotADirectoryError(string)
 
 
 class App:
@@ -110,17 +129,28 @@ class App:
         excel_parser.add_argument('-o', '--output', default='output.xlsm', help='The output Excel file')
         excel_parser.add_argument('csv_files', nargs='+', help='The CSV files to include in the Excel file')
         excel_parser.set_defaults(func=excel)
+        validate_parser = self.subparsers.add_parser('validate',
+                                                     help='Validate a set of CSV files given a set of rules.',
+                                                     formatter_class=RawTextArgumentDefaultsHelpFormatter)
+        validate_parser.add_argument('csv_files', nargs='+', help='The CSV files to include in the Excel file')
+        validate_parser.add_argument('--rules_dir',
+                                     type=dir_path,
+                                     default=os.path.join(os.getcwd(), 'rules'),
+                                     help='Directory path to rules')
+        validate_parser.set_defaults(func=validate)
 
     def parse_args(self, args=None):
         self.args = self.parser.parse_args(args)
 
     def run(self):
-        try:
-            if not self.args:
-                self.parse_args()
-        except:
-            self.parser.print_help()
-            sys.exit(1)
+        if not self.args:
+            self.parse_args()
+        # try:
+        #     if not self.args:
+        #         self.parse_args()
+        # except:
+        #     self.parser.print_help()
+        #     sys.exit(1)
         _init_logger(getattr(logging, self.args.verbosity.upper()))
         logging.debug(f'command-line args: {self.args}')
         self.args.func(self.args)
