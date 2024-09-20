@@ -70,7 +70,7 @@ def build_workbook(output_file, csv_files, config=None):
     return wb
 
 
-def excel(args):
+def csv2xl(args):
     """
     Generates or updates an Excel file from multiple CSV files.
 
@@ -123,12 +123,12 @@ class App:
                                  help='A YAML configuration file.')
 
         self.subparsers = self.parser.add_subparsers(dest='command')
-        excel_parser = self.subparsers.add_parser('excel',
+        excel_parser = self.subparsers.add_parser('csv2xl',
                                                    help='Generate or update an Excel file from multiple CSV files.',
                                                    formatter_class=RawTextArgumentDefaultsHelpFormatter)
         excel_parser.add_argument('-o', '--output', default='output.xlsm', help='The output Excel file')
         excel_parser.add_argument('csv_files', nargs='+', help='The CSV files to include in the Excel file')
-        excel_parser.set_defaults(func=excel)
+        excel_parser.set_defaults(func=csv2xl)
         validate_parser = self.subparsers.add_parser('validate',
                                                      help='Validate a set of CSV files given a set of rules.',
                                                      formatter_class=RawTextArgumentDefaultsHelpFormatter)
