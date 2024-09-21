@@ -99,7 +99,7 @@ def xl2csv(args):
         with open(os.path.join(args.output_dir if args.output_dir else '', f'{sheet.title}.csv'), 'w+') as f:
             logging.debug(f'Exporting worksheet "{sheet.title}"')
             for row in sheet:
-                csv_row = ','.join([c.value for c in row])
+                csv_row = ','.join([str(c.value) if c.value is not None else '' for c in row])
                 f.write(csv_row)
 
 
