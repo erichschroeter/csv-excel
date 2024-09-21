@@ -2,9 +2,11 @@ import argparse
 import csv
 import importlib
 import logging
+import openpyxl
 import os
 import sys
 import textwrap
+from pathlib import Path
 from xlsxwriter import Workbook
 from xlsxwriter.utility import xl_cell_to_rowcol
 import yaml
@@ -82,6 +84,25 @@ def csv2xl(args):
     wb.close()
 
 
+def xl2csv(args):
+    """
+    Exports worksheets within an Excel file to CSV files.
+
+    Args:
+        args:  The command line args.
+    """
+    wb = openpyxl.load_workbook(args.file)
+    # Create the output directory if it does not exist.
+    if args.output_dir:
+        Path(args.output_dir).mkdir(parents=True, exist_ok=True)
+    for sheet in wb:
+        with open(os.path.join(args.output_dir if args.output_dir else '', f'{sheet.title}.csv'), 'w+') as f:
+            logging.debug(f'Exporting worksheet "{sheet.title}"')
+            for row in sheet:
+                csv_row = ','.join([c.value for c in row])
+                f.write(csv_row)
+
+
 def validate(args):
     wb = build_workbook('output.xlsm', args.csv_files, args.config)
 
@@ -123,12 +144,18 @@ class App:
                                  help='A YAML configuration file.')
 
         self.subparsers = self.parser.add_subparsers(dest='command')
-        excel_parser = self.subparsers.add_parser('csv2xl',
+        csv2xl_parser = self.subparsers.add_parser('csv2xl',
                                                    help='Generate or update an Excel file from multiple CSV files.',
                                                    formatter_class=RawTextArgumentDefaultsHelpFormatter)
-        excel_parser.add_argument('-o', '--output', default='output.xlsm', help='The output Excel file')
-        excel_parser.add_argument('csv_files', nargs='+', help='The CSV files to include in the Excel file')
-        excel_parser.set_defaults(func=csv2xl)
+        csv2xl_parser.add_argument('-o', '--output', default='output.xlsm', help='The output Excel file')
+        csv2xl_parser.add_argument('csv_files', nargs='+', help='The CSV files to include in the Excel file')
+        csv2xl_parser.set_defaults(func=csv2xl)
+        xl2csv_parser = self.subparsers.add_parser('xl2csv',
+                                                   help='Exports worksheets to CSV files.',
+                                                   formatter_class=RawTextArgumentDefaultsHelpFormatter)
+        xl2csv_parser.add_argument('-o', '--output_dir', help='The output Excel file')
+        xl2csv_parser.add_argument('file', help='The Excel file')
+        xl2csv_parser.set_defaults(func=xl2csv)
         validate_parser = self.subparsers.add_parser('validate',
                                                      help='Validate a set of CSV files given a set of rules.',
                                                      formatter_class=RawTextArgumentDefaultsHelpFormatter)
