@@ -1,0 +1,18 @@
+[project]
+name = "erichschroeter.csv_excel"
+version = "0.1.0"
+authors = [
+  { name="Erich Schroeter", email="erich.schroeter+github@gmail.com" },
+]
+description = "A library to convert CSV files to Excel and back"
+readme = "README.md"
+requires-python = ">=3.8"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+[project.urls]
+Homepage = "https://github.com/erichschroeter/csv-excel"
+Issues = "https://github.com/erichschroeter/csv-excel/issues"
