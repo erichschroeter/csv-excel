@@ -1,3 +1,5 @@
+import logging
 
 def validate(workbook):
-    print(f'VALIDATING : {workbook.filename} for rule "no spaces"')
+    for sheet in workbook.worksheets:
+        logging.info(f'VALIDATING rule "no spaces" for sheet {sheet}')
