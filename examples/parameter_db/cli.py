@@ -1,10 +1,30 @@
 
 import argparse
+import csv
 import logging
 import os
 import textwrap
 
-from csv_excel.csv_excel import csv2xl, validate, xl2csv
+from csv_excel.csv_excel import WorkbookFactory, csv2xl, validate, xl2csv
+from code_generator.generators.cpp2 import Function, Header, Source, Variable
+
+def generate(args):
+    # Create a header with a global variable to be used in a source file.
+    header = Header('Parameters.h').guard('PARAMETERS_H')
+    logging.error(args)
+    if args.parameters_csv:
+        with open(args.parameters_csv, 'r') as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                v = Variable(row['Code'], type=row['Type'])
+                header.add(v)
+    if args.dryrun:
+        print(f'------------------- {header.filename}  START -------------------')
+        print(header)
+        print(f'------------------- {header.filename}  END   -------------------')
+    else:
+        with open(header.filename, 'w+') as f:
+            f.write(header)
 
 
 def dir_path(string):
@@ -51,6 +71,14 @@ class App:
                                      default=os.path.join(os.getcwd(), 'rules'),
                                      help='Directory path to rules')
         validate_parser.set_defaults(func=validate)
+        generate_parser = self.subparsers.add_parser('generate',
+                                                     help='Generate source code from CSV files.',
+                                                     formatter_class=RawTextArgumentDefaultsHelpFormatter)
+        generate_parser.add_argument('--parameters_csv', help='The CSV files for generating code.')
+        generate_parser.add_argument('-n', '--dryrun',
+                                     action='store_true',
+                                     help='Dry run')
+        generate_parser.set_defaults(func=generate)
 
     def parse_args(self, args=None):
         self.args = self.parser.parse_args(args)
