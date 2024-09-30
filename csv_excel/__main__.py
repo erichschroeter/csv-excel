@@ -40,7 +40,21 @@ class WorkbookFactory:
         return title
 
     def build_openpyxl(self, output_path, csv_files):
-        pass
+        wb = openpyxl.Workbook()
+        for csv_file in csv_files:
+            with open(csv_file, 'r') as f:
+                reader = csv.reader(f)
+                csv_data = list(reader)
+
+            worksheet_title = self._csv_path_to_worksheet_title(csv_file)
+            sheet = wb.create_sheet(title=worksheet_title)
+            logging.debug(f'Added worksheet "{worksheet_title}"')
+
+            # Write the data to the worksheet
+            for data in csv_data:
+                sheet.append(data)
+        wb.save(output_path)
+        return wb
 
     def build_xslxwriter(self, output_path, csv_files):
         wb = xlsxwriter.Workbook(output_path)
@@ -86,6 +100,7 @@ def csv2xl(args):
     Args:
         args:  The command line args.
     """
+    # Use xlsxwriter due to support for vbaProject macros.
     wb = WorkbookFactory(args.config).build_xslxwriter(args.output, args.csv_files)
     # Save the workbook
     wb.close()
@@ -111,6 +126,7 @@ def xl2csv(args):
 
 
 def validate(args):
+    # Use openpyxl due to better support for reading data.
     wb = WorkbookFactory(args.config).build_openpyxl('output.xlsm', args.csv_files)
 
     from os.path import dirname, basename, isfile, join
