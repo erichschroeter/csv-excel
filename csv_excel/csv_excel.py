@@ -38,6 +38,9 @@ class WorkbookFactory:
 
     def build_openpyxl(self, output_path, csv_files):
         wb = openpyxl.Workbook()
+        # Delete the default sheet
+        if 'Sheet' in wb.sheetnames:
+            wb.remove(wb['Sheet'])
         for csv_file in csv_files:
             with open(csv_file, 'r') as f:
                 reader = csv.reader(f)
@@ -129,13 +132,11 @@ def validate(args):
     from os.path import dirname, basename, isfile, join
     import glob
     modules = glob.glob(join(args.rules_dir, '*.py'))
-    # modules = [join('csv_excel.rules.', m) for m in glob.glob(join(dirname(__file__), 'rules/*.py'))]
-    logging.warning(f'Found modules: {modules}')
-    # rule_modules = [ basename(f)[:-3] for f in modules if isfile(f) and not f.endswith('__init__.py')]
-    rule_modules = [ f'csv_excel.rules.{basename(f)[:-3]}' for f in modules if isfile(f) and not f.endswith('__init__.py')]
-    logging.warning(f'Checking rules: {rule_modules}')
+    logging.debug(f'Found modules: {modules}')
+    # Use the rules_dir as a python module and import all .py files, excluding __init__.py
+    rule_modules = [ f'{basename(dirname(args.rules_dir))}.{basename(f)[:-3]}' for f in modules if isfile(f) and not f.endswith('__init__.py')]
+    logging.debug(f'Checking rules: {rule_modules}')
     for rule_module in rule_modules:
-        # rule = importlib.import_module('csv_excel.rules.unique_id')
         rule = importlib.import_module(rule_module)
         v = getattr(rule, 'validate')
         v(wb)
