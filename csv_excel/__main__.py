@@ -7,7 +7,7 @@ import os
 import sys
 import textwrap
 from pathlib import Path
-from xlsxwriter import Workbook
+import xlsxwriter
 from xlsxwriter.utility import xl_cell_to_rowcol
 import yaml
 
@@ -27,49 +27,56 @@ def column_to_index(col_str):
     return xl_cell_to_rowcol(f'{col_str.upper()}1')[0]
 
 
-def build_workbook(output_file, csv_files, config=None):
-    if config:
-        with open(config, 'r') as yamlfile:
-            config = yaml.safe_load(yamlfile)
+class WorkbookFactory:
+    def __init__(self, config_path=None) -> None:
+        self.config_path = config_path
+        if self.config_path:
+            with open(self.config_path, 'r') as yamlfile:
+                self.config = yaml.safe_load(yamlfile)
 
-    # Create a new workbook
-    wb = Workbook(output_file)
+    def _csv_path_to_worksheet_title(self, csv_path) -> str:
+        title = os.path.basename(csv_path)  # don't include full path, just file name
+        title = os.path.splitext(title)[0]  # remove extension
+        return title
 
-    # Iterate over each CSV file
-    for csv_file in csv_files:
-        # Load the CSV file
-        with open(csv_file, 'r') as f:
-            reader = csv.reader(f)
-            csv_data = list(reader)
+    def build_openpyxl(self, output_path, csv_files):
+        pass
 
-        # Create a new worksheet for this CSV file
-        clean_title = os.path.basename(csv_file)  # don't inclue full path, just file name
-        clean_title = os.path.splitext(clean_title)[0]  # remove extension
-        sheet = wb.add_worksheet(name=clean_title)
-        # logging.debug(f'Added worksheet "{clean_title}"')
+    def build_xslxwriter(self, output_path, csv_files):
+        wb = xlsxwriter.Workbook(output_path)
+        # Delete the default sheet
+        if 'Sheet' in wb.sheetnames:
+            wb.remove(wb['Sheet'])
+        # Include the Excel macro that auto exports worksheets to CSV files when file is saved.
+        vbaproject_path = f'{os.path.dirname(os.path.abspath(__file__))}/vbaProject.bin'
+        logging.debug(f'Packing VBA project into Excel file: "{vbaproject_path}"')
+        wb.add_vba_project(vbaproject_path)
 
-        if config:
-            if clean_title in config['sheets']:
-                sheet_config = config['sheets'][clean_title]
-                if 'columns' in sheet_config:
-                    for colname, colcfg in sheet_config['columns'].items():
-                        if 'width' in colcfg:
-                            width = int(colcfg['width'])
-                            # logging.debug(f'Setting worksheet "{clean_title}" column "{colname}" to width of {width}')
-                            colindex = column_to_index(colname)
-                            sheet.set_column_pixels(colindex, colindex, width)
+        for csv_file in csv_files:
+            with open(csv_file, 'r') as f:
+                reader = csv.reader(f)
+                csv_data = list(reader)
 
-        # Write the data to the worksheet
-        for row, data in enumerate(csv_data):
-            sheet.write_row(row, 0, data)
+            worksheet_title = self._csv_path_to_worksheet_title(csv_file)
+            sheet = wb.add_worksheet(name=worksheet_title)
+            logging.debug(f'Added worksheet "{worksheet_title}"')
 
-    # Delete the default sheet
-    if 'Sheet' in wb.sheetnames:
-        wb.remove(wb['Sheet'])
-    vbaproject_path = f'{os.path.dirname(os.path.abspath(__file__))}/vbaProject.bin'
-    logging.debug(f'Packing VBA project into Excel file: "{vbaproject_path}"')
-    wb.add_vba_project(vbaproject_path)
-    return wb
+            # Apply any config specifications.
+            if self.config:
+                if worksheet_title in self.config['sheets']:
+                    sheet_config = self.config['sheets'][worksheet_title]
+                    if 'columns' in sheet_config:
+                        for colname, colcfg in sheet_config['columns'].items():
+                            if 'width' in colcfg:
+                                width = int(colcfg['width'])
+                                colindex = column_to_index(colname)
+                                sheet.set_column_pixels(colindex, colindex, width)
+
+            # Write the data to the worksheet
+            for row, data in enumerate(csv_data):
+                sheet.write_row(row, 0, data)
+
+        return wb
 
 
 def csv2xl(args):
@@ -79,7 +86,7 @@ def csv2xl(args):
     Args:
         args:  The command line args.
     """
-    wb = build_workbook(args.output, args.csv_files, args.config)
+    wb = WorkbookFactory(args.config).build_xslxwriter(args.output, args.csv_files)
     # Save the workbook
     wb.close()
 
@@ -104,7 +111,7 @@ def xl2csv(args):
 
 
 def validate(args):
-    wb = build_workbook('output.xlsm', args.csv_files, args.config)
+    wb = WorkbookFactory(args.config).build_openpyxl('output.xlsm', args.csv_files)
 
     from os.path import dirname, basename, isfile, join
     import glob
