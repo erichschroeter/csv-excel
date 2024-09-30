@@ -1,0 +1,9 @@
+sheets:
+  Parameters:
+    columns:
+      A:
+        width: 25
+  NV Memory:
+    columns:
+      B:
+        width: 25
