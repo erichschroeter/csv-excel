@@ -24,6 +24,17 @@ def column_to_index(col_str):
     return xl_cell_to_rowcol(f'{col_str.upper()}1')[0]
 
 
+class RuleError(Exception):
+    def __init__(self, rule_file, message, *args: object) -> None:
+        self.message = f'{os.path.basename(rule_file)}: {message}'
+        super().__init__(message, *args)
+
+
+class CsvRuleError(RuleError):
+    def __init__(self, rule_file, row, col, message, *args: object) -> None:
+        super().__init__(rule_file, f'(row: {row}, col: {col}): {message}', *args)
+
+
 class WorkbookFactory:
     def __init__(self, config_path=None) -> None:
         self.config_path = config_path
@@ -136,7 +147,13 @@ def validate(args):
     # Use the rules_dir as a python module and import all .py files, excluding __init__.py
     rule_modules = [ f'{basename(dirname(args.rules_dir))}.{basename(f)[:-3]}' for f in modules if isfile(f) and not f.endswith('__init__.py')]
     logging.debug(f'Checking rules: {rule_modules}')
+    results = []
     for rule_module in rule_modules:
         rule = importlib.import_module(rule_module)
         v = getattr(rule, 'validate')
-        v(wb)
+        result = v(wb)
+        if result:
+            results.extend(result)
+    if results:
+        for result in results:
+            logging.error(f'{result.message}')
