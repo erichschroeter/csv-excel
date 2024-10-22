@@ -38,6 +38,7 @@ class CsvRuleError(RuleError):
 class WorkbookFactory:
     def __init__(self, config_path=None) -> None:
         self.config_path = config_path
+        self.config = None
         if self.config_path:
             with open(self.config_path, 'r') as yamlfile:
                 self.config = yaml.safe_load(yamlfile)
