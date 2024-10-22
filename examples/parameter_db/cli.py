@@ -48,6 +48,7 @@ class App:
                                  help='Set the logging verbosity level.')
         self.parser.add_argument('-c', '--config',
                                  help='A YAML configuration file.')
+        self.parser.set_defaults(func=lambda args: self.parser.format_help())
 
         self.subparsers = self.parser.add_subparsers(dest='command')
         csv2xl_parser = self.subparsers.add_parser('csv2xl',
@@ -86,12 +87,6 @@ class App:
     def run(self):
         if not self.args:
             self.parse_args()
-        # try:
-        #     if not self.args:
-        #         self.parse_args()
-        # except:
-        #     self.parser.print_help()
-        #     sys.exit(1)
         _init_logger(getattr(logging, self.args.verbosity.upper()))
         logging.debug(f'command-line args: {self.args}')
         self.args.func(self.args)
