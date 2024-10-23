@@ -31,6 +31,14 @@ This project happens to store CSV files under the `worksheets/` folder and valid
 The CLI program containing `main` and parsing the command line.
 ### `config.yml`
 An example config file controlling how to generate an Excel file.
+For example, if you wanted to increase the width of a column, you would specify that in here.
+```yaml
+sheets:
+  Parameters:
+    columns:
+      A:
+        width: 25
+```
 ### `rules/`
 #### `rules/nospaces.py`
 An example rule to check that parameter names do not contain spaces.
