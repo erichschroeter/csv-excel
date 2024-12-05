@@ -48,7 +48,7 @@ An example rule to check that each parameter in the `NV Memory.csv` exists withi
 An example rule to check that each parameter ID in the `Parameters.csv` is unique.
 ### `worksheets/`
 #### `worksheets/invalid/`
-An example CSV file to show validation errors with `worksheets/invalid/Parameters.csv` and `worksheets/invalid/NV Memory.csv` files.
+An example with invalid CSV files to show validation errors with `worksheets/invalid/Parameters.csv` and `worksheets/invalid/NV Memory.csv` files.
 ```
 $ python cli.py validate --rules_dir rules/ worksheets/invalid/*
 2024-10-22 10:46:42,989 - ERROR - nospaces.py: (row: 1, col: 1): invalid C++ identifier "PARAM Y"
@@ -56,7 +56,7 @@ $ python cli.py validate --rules_dir rules/ worksheets/invalid/*
 2024-10-22 10:46:42,989 - ERROR - unique_id.py: not unique "PARAM_X"
 ```
 #### `worksheets/valid/`
-An example CSV file to correctly generate an Excel file with `worksheets/valid/Parameters.csv` and `worksheets/valid/NV Memory.csv` files.
+An example with valid CSV files to correctly generate an Excel file with `worksheets/valid/Parameters.csv` and `worksheets/valid/NV Memory.csv` files.
 
 Generate an Excel file from CSV files:
 ```bash
