@@ -21,7 +21,7 @@ def column_to_index(col_str):
         row, col: Zero indexed cell row and column indices.
 
     """
-    return xl_cell_to_rowcol(f'{col_str.upper()}1')[0]
+    return xl_cell_to_rowcol(f'{col_str.upper()}1')[1]
 
 
 class RuleError(Exception):
