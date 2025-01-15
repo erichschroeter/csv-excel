@@ -68,7 +68,7 @@ class WorkbookFactory:
         wb.save(output_path)
         return wb
 
-    def build_xslxwriter(self, output_path, csv_files):
+    def build_xlsxwriter(self, output_path, csv_files):
         wb = xlsxwriter.Workbook(output_path)
         # Delete the default sheet
         if 'Sheet' in wb.sheetnames:
@@ -97,6 +97,7 @@ class WorkbookFactory:
                                 width = int(colcfg['width'])
                                 colindex = column_to_index(colname)
                                 sheet.set_column_pixels(colindex, colindex, width)
+                                logging.debug(f'Sheet "{worksheet_title}" column "{colname}" ({colindex}) to {width}px')
 
             # Write the data to the worksheet
             for row, data in enumerate(csv_data):
@@ -113,7 +114,7 @@ def csv2xl(args):
         args:  The command line args.
     """
     # Use xlsxwriter due to support for vbaProject macros.
-    wb = WorkbookFactory(args.config).build_xslxwriter(args.output, args.csv_files)
+    wb = WorkbookFactory(args.config).build_xlsxwriter(args.output, args.csv_files)
     # Save the workbook
     wb.close()
 
