@@ -6,7 +6,7 @@ import os
 import textwrap
 
 from csv_excel.csv_excel import WorkbookFactory, csv2xl, validate, xl2csv
-from code_generator.generators.cpp2 import Function, Header, Source, Variable
+from code_generator.generators.cpp import Function, Header, Source, Variable
 
 def generate(args):
     # Create a header with a global variable to be used in a source file.
