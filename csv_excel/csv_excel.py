@@ -48,7 +48,7 @@ class WorkbookFactory:
         title = os.path.splitext(title)[0]  # remove extension
         return title
 
-    def build_openpyxl(self, output_path, csv_files):
+    def build_openpyxl(self, csv_files, output_path=None):
         wb = openpyxl.Workbook()
         # Delete the default sheet
         if 'Sheet' in wb.sheetnames:
@@ -65,10 +65,11 @@ class WorkbookFactory:
             # Write the data to the worksheet
             for data in csv_data:
                 sheet.append(data)
-        wb.save(output_path)
+        if output_path:
+            wb.save(output_path)
         return wb
 
-    def build_xlsxwriter(self, output_path, csv_files):
+    def build_xlsxwriter(self, csv_files, output_path):
         wb = xlsxwriter.Workbook(output_path)
         # Delete the default sheet
         if 'Sheet' in wb.sheetnames:
@@ -114,7 +115,7 @@ def csv2xl(args):
         args:  The command line args.
     """
     # Use xlsxwriter due to support for vbaProject macros.
-    wb = WorkbookFactory(args.config).build_xlsxwriter(args.output, args.csv_files)
+    wb = WorkbookFactory(args.config).build_xlsxwriter(args.csv_files, args.output)
     # Save the workbook
     wb.close()
 
@@ -140,7 +141,7 @@ def xl2csv(args):
 
 def validate(args):
     # Use openpyxl due to better support for reading data.
-    wb = WorkbookFactory(args.config).build_openpyxl('output.xlsm', args.csv_files)
+    wb = WorkbookFactory(args.config).build_openpyxl(args.csv_files)
 
     from os.path import dirname, basename, isfile, join
     import glob
