@@ -21,18 +21,18 @@ def column_to_index(col_str):
         row, col: Zero indexed cell row and column indices.
 
     """
-    return xl_cell_to_rowcol(f'{col_str.upper()}1')[1]
+    return xl_cell_to_rowcol(f"{col_str.upper()}1")[1]
 
 
 class RuleError(Exception):
     def __init__(self, rule_file, message, *args: object) -> None:
-        self.message = f'{os.path.basename(rule_file)}: {message}'
+        self.message = f"{os.path.basename(rule_file)}: {message}"
         super().__init__(message, *args)
 
 
 class CsvRuleError(RuleError):
     def __init__(self, rule_file, row, col, message, *args: object) -> None:
-        super().__init__(rule_file, f'(row: {row}, col: {col}): {message}', *args)
+        super().__init__(rule_file, f"(row: {row}, col: {col}): {message}", *args)
 
 
 class WorkbookFactory:
@@ -40,7 +40,7 @@ class WorkbookFactory:
         self.config_path = config_path
         self.config = None
         if self.config_path:
-            with open(self.config_path, 'r') as yamlfile:
+            with open(self.config_path, "r") as yamlfile:
                 self.config = yaml.safe_load(yamlfile)
 
     def _csv_path_to_worksheet_title(self, csv_path) -> str:
@@ -51,10 +51,10 @@ class WorkbookFactory:
     def build_openpyxl(self, csv_files, output_path=None):
         wb = openpyxl.Workbook()
         # Delete the default sheet
-        if 'Sheet' in wb.sheetnames:
-            wb.remove(wb['Sheet'])
+        if "Sheet" in wb.sheetnames:
+            wb.remove(wb["Sheet"])
         for csv_file in csv_files:
-            with open(csv_file, 'r') as f:
+            with open(csv_file, "r") as f:
                 reader = csv.reader(f)
                 csv_data = list(reader)
 
@@ -72,15 +72,15 @@ class WorkbookFactory:
     def build_xlsxwriter(self, csv_files, output_path):
         wb = xlsxwriter.Workbook(output_path)
         # Delete the default sheet
-        if 'Sheet' in wb.sheetnames:
-            wb.remove(wb['Sheet'])
+        if "Sheet" in wb.sheetnames:
+            wb.remove(wb["Sheet"])
         # Include the Excel macro that auto exports worksheets to CSV files when file is saved.
-        vbaproject_path = f'{os.path.dirname(os.path.abspath(__file__))}/vbaProject.bin'
+        vbaproject_path = f"{os.path.dirname(os.path.abspath(__file__))}/vbaProject.bin"
         logging.debug(f'Packing VBA project into Excel file: "{vbaproject_path}"')
         wb.add_vba_project(vbaproject_path)
 
         for csv_file in csv_files:
-            with open(csv_file, 'r') as f:
+            with open(csv_file, "r") as f:
                 reader = csv.reader(f)
                 csv_data = list(reader)
 
@@ -90,15 +90,17 @@ class WorkbookFactory:
 
             # Apply any config specifications.
             if self.config:
-                if worksheet_title in self.config['sheets']:
-                    sheet_config = self.config['sheets'][worksheet_title]
-                    if 'columns' in sheet_config:
-                        for colname, colcfg in sheet_config['columns'].items():
-                            if 'width' in colcfg:
-                                width = int(colcfg['width'])
+                if worksheet_title in self.config["sheets"]:
+                    sheet_config = self.config["sheets"][worksheet_title]
+                    if "columns" in sheet_config:
+                        for colname, colcfg in sheet_config["columns"].items():
+                            if "width" in colcfg:
+                                width = int(colcfg["width"])
                                 colindex = column_to_index(colname)
                                 sheet.set_column_pixels(colindex, colindex, width)
-                                logging.debug(f'Sheet "{worksheet_title}" column "{colname}" ({colindex}) to {width}px')
+                                logging.debug(
+                                    f'Sheet "{worksheet_title}" column "{colname}" ({colindex}) to {width}px'
+                                )
 
             # Write the data to the worksheet
             for row, data in enumerate(csv_data):
@@ -132,7 +134,13 @@ def xl2csv(args):
     if args.output_dir:
         Path(args.output_dir).mkdir(parents=True, exist_ok=True)
     for sheet in wb:
-        with open(os.path.join(args.output_dir if args.output_dir else '', f'{sheet.title}.csv'), 'w+', newline='') as f:
+        with open(
+            os.path.join(
+                args.output_dir if args.output_dir else "", f"{sheet.title}.csv"
+            ),
+            "w+",
+            newline="",
+        ) as f:
             logging.debug(f'Exporting worksheet "{sheet.title}"')
             c = csv.writer(f)
             for row in sheet.rows:
@@ -145,18 +153,23 @@ def validate(args):
 
     from os.path import dirname, basename, isfile, join
     import glob
-    modules = glob.glob(join(args.rules_dir, '*.py'))
-    logging.debug(f'Found modules: {modules}')
+
+    modules = glob.glob(join(args.rules_dir, "*.py"))
+    logging.debug(f"Found modules: {modules}")
     # Use the rules_dir as a python module and import all .py files, excluding __init__.py
-    rule_modules = [ f'{basename(dirname(args.rules_dir))}.{basename(f)[:-3]}' for f in modules if isfile(f) and not f.endswith('__init__.py')]
-    logging.debug(f'Checking rules: {rule_modules}')
+    rule_modules = [
+        f"{basename(dirname(args.rules_dir))}.{basename(f)[:-3]}"
+        for f in modules
+        if isfile(f) and not f.endswith("__init__.py")
+    ]
+    logging.debug(f"Checking rules: {rule_modules}")
     results = []
     for rule_module in rule_modules:
         rule = importlib.import_module(rule_module)
-        v = getattr(rule, 'validate')
+        v = getattr(rule, "validate")
         result = v(wb)
         if result:
             results.extend(result)
     if results:
         for result in results:
-            logging.error(f'{result.message}')
+            logging.error(f"{result.message}")
