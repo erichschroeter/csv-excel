@@ -4,8 +4,8 @@ import logging
 import os
 import textwrap
 
-from csv_excel.csv_excel import WorkbookFactory, csv2xl, validate, xl2csv
-from code_generator.generators.cpp import Function, Header, Source, Variable
+from csv_excel.csv_excel import csv2xl, validate, xl2csv
+from code_generator.generators.cpp import Header, Variable
 
 
 def generate(args):
@@ -41,7 +41,7 @@ class App:
             description=textwrap.dedent(
                 """\
                 A commandline utility to manage an Excel file with multiple worksheets while keeping data in CSV files for better Git support.
-                """
+                """  # noqa: E501
             ),
             formatter_class=RawTextArgumentDefaultsHelpFormatter,
         )

@@ -20,8 +20,8 @@ class App:
             description=textwrap.dedent(
                 """\
                 A commandline utility to manage an Excel file with multiple worksheets while keeping data in CSV files for better Git support.
-                """
-            ),  # noqa: E501
+                """  # noqa: E501
+            ),
             formatter_class=RawTextArgumentDefaultsHelpFormatter,
         )
         self.parser.add_argument(

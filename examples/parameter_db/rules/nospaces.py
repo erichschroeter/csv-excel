@@ -1,4 +1,3 @@
-import logging
 import re
 
 from csv_excel.csv_excel import CsvRuleError, RuleError
