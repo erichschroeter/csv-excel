@@ -5,6 +5,8 @@
     - [`cli.py`](#clipy)
     - [`config.yml`](#configyml)
     - [`csv2xl.bat`](#csv2xlbat)
+    - [`validate_valid.bat`](#validate_validbat)
+    - [`validate_invalid.bat`](#validate_invalidbat)
     - [`rules/`](#rules)
       - [`rules/nospaces.py`](#rulesnospacespy)
       - [`rules/param_memory_map.py`](#rulesparam_memory_mappy)
@@ -44,6 +46,31 @@ An example batch script to execute the `csv2xl` subcommand.
 This is useful for people that don't know how to use the command line in Windows.
 
 The script will create an Excel file named `worksheets/valid/db.xlsm` and use the `config.yml` configuration file.
+
+[top](#parameter_db)
+
+### `validate_valid.bat`
+An example batch script to execute the `validate` subcommand and validate the CSV files in the `worksheets/valid/` directory against the rules specified in the `rules/` directory.
+This is useful for people that don't know how to use the command line in Windows.
+
+**Example output**
+```
+Press any key to continue . . .
+```
+
+[top](#parameter_db)
+
+### `validate_invalid.bat`
+An example batch script to execute the `validate` subcommand and validate the CSV files in the `worksheets/invalid/` directory against the rules specified in the `rules/` directory.
+This is useful for people that don't know how to use the command line in Windows.
+
+**Example output**
+```
+2025-01-16 11:08:02,952 - ERROR - nospaces.py: (row: 1, col: 1): invalid C++ identifier "PARAM Y"
+2025-01-16 11:08:02,952 - ERROR - param_memory_map.py: (row: 2, col: 1): ID does not exist "PARAM_E"
+2025-01-16 11:08:02,952 - ERROR - unique_id.py: not unique "PARAM_X"
+Press any key to continue . . .
+```
 
 [top](#parameter_db)
 
@@ -94,11 +121,11 @@ python cli.py xl2csv -o worksheets/valid/ worksheets/valid/db.xlsm
 
 ### Windows
 
-```powershell
+```PowerShell
+git lfs pull
 python -m venv .venv
 . .venv\Scripts\activate
 pip install -r requirements.txt
-git lfs pull
 python cli.py
 ```
 
@@ -108,10 +135,10 @@ python cli.py
 > The bash code below is written with the intent to be executed from the top level git directory.
 
 ```bash
+git lfs pull
 python -m venv .venv
 . .venv/bin/activate
 pip install -r requirements.txt
-git lfs pull
 python examples/parameter_db/cli.py -c examples/parameter_db/config.yml csv2xl examples/parameter_db/worksheets/valid/*.csv
 ```
 
