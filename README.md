@@ -2,7 +2,7 @@
 
 - [CSV Excel](#csv-excel)
   - [Feature comparison](#feature-comparison)
-  - [Setting up the Virtual Environment](#setting-up-the-virtual-environment)
+  - [Getting started](#getting-started)
     - [Windows](#windows)
     - [Linux](#linux)
   - [Maintainers](#maintainers)
@@ -32,14 +32,21 @@ Some of the features may be arbitrary, but by using **csv-excel** it may be poss
 
 [top](#csv-excel)
 
-## Setting up the Virtual Environment
+## Getting started
 
-1. Install `virtualenv` if you haven't already: `pip install virtualenv`
+> [!IMPORTANT]
+> The `git lfs pull` is important since the `vbaProject.bin` needs to exist locally in order to be included in the generated Excel file created via the `csv2xl` subcommand.
+
+**Dependencies**
+* [Python 3](https://www.python.org/)
+* (recommended) [virtualenv](https://virtualenv.pypa.io/en/latest/user_guide.html)
+    * `pip install virtualenv`
 
 ### Windows
-```powershell
+```PowerShell
+git lfs pull
 python -m venv .venv
-. .venv\Scripts\activate
+.venv\Scripts\activate.bat
 pip install -r requirements.txt
 python -m csv-excel --help
 ```
@@ -48,10 +55,10 @@ python -m csv-excel --help
 
 ### Linux
 ```bash
+git lfs pull
 python -m venv .venv
 . .venv/bin/activate
 pip install -r requirements.txt
-git lfs pull
 python -m csv-excel --help
 ```
 

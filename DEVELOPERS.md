@@ -2,6 +2,9 @@
 
 - [Developers](#developers)
   - [Design](#design)
+  - [File overview](#file-overview)
+    - [`csv_excel\`](#csv_excel)
+      - [`csv_excel\vbaProject.bin`](#csv_excelvbaprojectbin)
   - [Developing](#developing)
     - [Install package locally for developing](#install-package-locally-for-developing)
     - [Update pypi version](#update-pypi-version)
@@ -19,6 +22,41 @@ flowchart LR
     worksheets --> Python
     Python --> Excel
 ```
+
+## File overview
+
+### `csv_excel\`
+#### `csv_excel\vbaProject.bin`
+This is a binary file to be included in generated Excel files.
+It contains the following VB macro, which handles auto exporting all worksheets to their respective CSV file.
+
+> [!TIP]
+> It might be better to change the `FileFormat:=xlCSV` to `FileFormat:=xlCSVUTF8` for UTF8 CSV files.
+
+```vb
+Option Explicit
+
+Sub SaveSheetAsCSV()
+    Dim ws As Worksheet
+    Dim csvFile As String
+    
+    For Each ws In Worksheets
+        ws.Copy
+        csvFile = ThisWorkbook.Path & "\" & ws.Name & ".csv"
+        Rem Don't prompt, just overwrite CSV files
+        Application.DisplayAlerts = False
+        Application.ActiveWorkbook.SaveAs Filename:=csvFile, FileFormat:=xlCSV, CreateBackup:=False, ConflictResolution:=xlLocalSessionChanges
+        Application.ActiveWorkbook.Saved = True
+        Application.ActiveWorkbook.Close
+    Next
+End Sub
+
+Private Sub Workbook_BeforeSave(ByVal SaveAsUI As Boolean, Cancel As Boolean)
+    SaveSheetAsCSV
+End Sub
+```
+
+[top](#developers)
 
 ## Developing
 

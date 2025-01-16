@@ -4,6 +4,7 @@
   - [File overview](#file-overview)
     - [`cli.py`](#clipy)
     - [`config.yml`](#configyml)
+    - [`csv2xl.bat`](#csv2xlbat)
     - [`rules/`](#rules)
       - [`rules/nospaces.py`](#rulesnospacespy)
       - [`rules/param_memory_map.py`](#rulesparam_memory_mappy)
@@ -35,6 +36,14 @@ sheets:
       A:
         width: 25
 ```
+
+[top](#parameter_db)
+
+### `csv2xl.bat`
+An example batch script to execute the `csv2xl` subcommand.
+This is useful for people that don't know how to use the command line in Windows.
+
+The script will create an Excel file named `worksheets/valid/db.xlsm` and use the `config.yml` configuration file.
 
 [top](#parameter_db)
 
