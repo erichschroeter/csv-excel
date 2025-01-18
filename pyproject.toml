@@ -1,16 +1,27 @@
 [project]
 name = "erichschroeter.csv_excel"
-version = "0.1.1"
+version = "0.1.0"
 authors = [
-  { name="Erich Schroeter", email="erich.schroeter+github@gmail.com" },
+  { name="Erich Schroeter", email="erich.schroeter+pypi@gmail.com" },
 ]
 description = "A library to convert CSV files to Excel and back"
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
+    "Topic :: Software Development :: Libraries :: Python Modules"
+]
+dependencies = [
+    "openpyxl==3.1.5",
+    "PyYAML==6.0.2",
+    "XlsxWriter==3.2.0",
+]
+
+[project.optional-dependencies]
+test = [
+    "pytest==8.3.3",
 ]
 
 [project.urls]

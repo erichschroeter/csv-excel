@@ -1,8 +1,2 @@
-erichschroeter.code_generator==0.1.6
-erichschroeter.csv_excel==0.1.1
-et-xmlfile==1.1.0
-Jinja2==3.1.4
-MarkupSafe==2.1.5
-openpyxl==3.1.5
-PyYAML==6.0.2
-XlsxWriter==3.2.0
+erichschroeter.code_generator==0.1.0
+erichschroeter.csv_excel==0.1.0
