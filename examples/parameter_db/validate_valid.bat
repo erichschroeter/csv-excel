@@ -3,7 +3,7 @@
 @REM Description: Validate CSV files based on the rules within the `rules/` directory.
 
 @REM Activate the Python virtual environment if it exists, otherwise create it.
-IF EXIST .venv (
+IF EXIST .venv\Scripts\activate.bat (
     call .venv\Scripts\activate.bat
 ) ELSE (
     python -m venv .venv
