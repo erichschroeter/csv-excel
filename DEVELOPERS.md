@@ -34,13 +34,10 @@ This file is used during packaging releases to include the `vbaProject.bin` in t
 This is a binary file to be included in generated Excel files.
 It contains the following VB macro, which handles auto exporting all worksheets to their respective CSV file.
 
-> [!TIP]
-> It might be better to change the `FileFormat:=xlCSV` to `FileFormat:=xlCSVUTF8` for UTF8 CSV files.
-
 ```vb
 Option Explicit
 
-Sub SaveSheetAsCSV()
+Sub SaveSheetsAsCSV()
     Dim ws As Worksheet
     Dim csvFile As String
     
@@ -49,14 +46,14 @@ Sub SaveSheetAsCSV()
         csvFile = ThisWorkbook.Path & "\" & ws.Name & ".csv"
         Rem Don't prompt, just overwrite CSV files
         Application.DisplayAlerts = False
-        Application.ActiveWorkbook.SaveAs Filename:=csvFile, FileFormat:=xlCSV, CreateBackup:=False, ConflictResolution:=xlLocalSessionChanges
+        Application.ActiveWorkbook.SaveAs Filename:=csvFile, FileFormat:=xlCSVUTF8, CreateBackup:=False, ConflictResolution:=xlLocalSessionChanges
         Application.ActiveWorkbook.Saved = True
         Application.ActiveWorkbook.Close
     Next
 End Sub
 
 Private Sub Workbook_BeforeSave(ByVal SaveAsUI As Boolean, Cancel As Boolean)
-    SaveSheetAsCSV
+    SaveSheetsAsCSV
 End Sub
 ```
 
