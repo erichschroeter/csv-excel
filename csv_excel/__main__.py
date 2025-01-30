@@ -60,7 +60,7 @@ class App:
             formatter_class=RawTextArgumentDefaultsHelpFormatter,
         )
         validate_parser.add_argument(
-            "csv_files", nargs="+", help="The CSV files to include in the Excel file"
+            "csv_files", nargs="*", help="The CSV files to include in the Excel file"
         )
         validate_parser.add_argument(
             "--rules_dir",
