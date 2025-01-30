@@ -166,26 +166,26 @@ class CsvWorkbook:
 
 
 if __name__ == "__main__":
-    # App().run()
-    import csv
-    import yaml
+    App().run()
+    # import csv
+    # import yaml
 
-    parser = argparse.ArgumentParser()
-    parser.add_argument("-c", "--config", help="The YAML config")
-    parser.add_argument(
-        "csv_files", nargs="+", help="The CSV files to include in the Excel file"
-    )
+    # parser = argparse.ArgumentParser()
+    # parser.add_argument("-c", "--config", help="The YAML config")
+    # parser.add_argument(
+    #     "csv_files", nargs="+", help="The CSV files to include in the Excel file"
+    # )
 
-    args = parser.parse_args()
-    _init_logger(level=logging.DEBUG)
-    config = None
-    with open(args.config, "r") as yamlfile:
-        logging.debug(f"Loading config: {args.config}")
-        config = yaml.safe_load(yamlfile)
-    logging.debug(f"Config = {config}")
+    # args = parser.parse_args()
+    # _init_logger(level=logging.DEBUG)
+    # config = None
+    # with open(args.config, "r") as yamlfile:
+    #     logging.debug(f"Loading config: {args.config}")
+    #     config = yaml.safe_load(yamlfile)
+    # logging.debug(f"Config = {config}")
 
-    wb = CsvWorkbook(args.csv_files, config)
-    for f in wb.head(1):
-        print(f)
+    # wb = CsvWorkbook(args.csv_files, config)
+    # for f in wb.head(1):
+    #     print(f)
 
-    # print(f"args: {args}")
+    # # print(f"args: {args}")

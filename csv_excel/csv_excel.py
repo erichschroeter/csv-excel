@@ -196,18 +196,54 @@ def xl2csv(args):
                 c.writerow([cell.value for cell in row])
 
 
+import inspect
+
+
+def collect_sheet_rules(module, annotation):
+    annotated_funcs = []
+    for name, obj in inspect.getmembers(module):
+        logging.debug(f"Checking {name} :: {obj}")
+        if inspect.isfunction(obj):
+            if annotation in getattr(obj, "__annotations__", {}):
+                annotated_funcs.append(obj)
+    return annotated_funcs
+
+
+def sheet_rule(func):
+    func.__annotations__["sheet_rule"] = True
+    return func
+
+
+def directory_to_module_path(directory_path):
+    # Normalize the path to use the correct OS-specific separator
+    normalized_path = os.path.normpath(directory_path)
+
+    # Split the path into components
+    path_components = normalized_path.split(os.sep)
+
+    # Remove the file extension if present
+    if path_components[-1].endswith(".py"):
+        path_components[-1] = path_components[-1][:-3]
+
+    # Join the components with dots to form the module path
+    module_path = ".".join(path_components)
+
+    return module_path
+
+
 def validate(args):
-    # Use openpyxl due to better support for reading data.
-    wb = WorkbookFactory(args.config).build_openpyxl(args.csv_files)
+    # # Use openpyxl due to better support for reading data.
+    # wb = WorkbookFactory(args.config).build_openpyxl(args.csv_files)
 
     from os.path import dirname, basename, isfile, join
     import glob
 
-    modules = glob.glob(join(args.rules_dir, "*.py"))
+    modules = sorted(glob.glob(join(args.rules_dir, "*.py")))
     logging.debug(f"Found modules: {modules}")
     # Use the rules_dir as a python module and import all .py files, excluding __init__.py
     rule_modules = [
-        f"{basename(dirname(args.rules_dir))}.{basename(f)[:-3]}"
+        # f"examples.parameter_db.{basename(dirname(args.rules_dir))}.{basename(f)[:-3]}"
+        f"{directory_to_module_path(args.rules_dir)}.{basename(f)[:-3]}"
         for f in modules
         if isfile(f) and not f.endswith("__init__.py")
     ]
@@ -215,10 +251,15 @@ def validate(args):
     results = []
     for rule_module in rule_modules:
         rule = importlib.import_module(rule_module)
-        v = getattr(rule, "validate")
-        result = v(wb)
-        if result:
-            results.extend(result)
-    if results:
-        for result in results:
-            logging.error(f"{result.message}")
+        sheet_rules = collect_sheet_rules(rule, "sheet_rule")
+        r_str = "\n".join([f"{r.__name__}" for r in sheet_rules])
+        logging.info(f"Checking rules: {rule}: {r_str}")
+        # for f in collect_sheet_rules(m, "sheet_rule"):
+        #     logging.info(f"found rule {f.__name__}")
+    #     v = getattr(rule, "validate")
+    #     result = v(wb)
+    #     if result:
+    #         results.extend(result)
+    # if results:
+    #     for result in results:
+    #         logging.error(f"{result.message}")

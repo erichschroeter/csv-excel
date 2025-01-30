@@ -1,6 +1,7 @@
 import re
 
 from csv_excel.csv_excel import CsvRuleError, RuleError
+from csv_excel.csv_excel import sheet_rule
 
 CPP_IDENTIFIER_REGEX = r"^[a-zA-Z_]+[a-zA-Z0-9_]*$"
 CPP_IDENTIFIER_PATTERN = re.compile(CPP_IDENTIFIER_REGEX)
@@ -21,3 +22,8 @@ def validate(workbook) -> list[RuleError]:
                     )
                 )
     return results
+
+
+@sheet_rule
+def validate_something():
+    pass
