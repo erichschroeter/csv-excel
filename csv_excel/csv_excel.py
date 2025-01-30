@@ -35,18 +35,69 @@ class CsvRuleError(RuleError):
         super().__init__(rule_file, f"(row: {row}, col: {col}): {message}", *args)
 
 
+class CsvSheet:
+    def __init__(self, path=None, data_row=1, freeze_pane_row=0, freeze_pane_col=0):
+        self.path = path
+        self.data_row = data_row
+        self.freeze_pane_row = freeze_pane_row
+        self.freeze_pane_col = freeze_pane_col
+        self.reader = None
+        self._data = ["A", "B", "C", "D", "E"]
+
+    def data(self):
+        for row in self._data:
+            yield row
+        # if self.path:
+        #     with open(self.path, newline="") as csvfile:
+        #         csv_basename = os.path.basename(self.path).split(".")[0]
+        #         r = csv.reader(csvfile)
+        #         rownum = 0
+        #         if self.config and "sheets" in self.config:
+        #             if csv_basename in self.config["sheets"]:
+        #                 if "data_row" in self.config["sheets"][csv_basename]:
+        #                     for _ in range(
+        #                         self.config["sheets"][csv_basename]["data_row"] - 1
+        #                     ):
+        #                         next(r)
+        #                         rownum += 1
+        #         for i, row in enumerate(r):
+        #             rownum += 1
+        #             if i >= n:
+        #                 break
+        #             yield self.path, csv_basename, rownum, row
+
+
 class WorkbookFactory:
-    def __init__(self, config_path=None) -> None:
+    def __init__(self, config=None, csv_files=[]) -> None:
+        # To support testability, provide a way to override config handlers.
+        self.handlers = {
+            "set_column_width": self._set_column_width,
+        }
+        self.config_path = None
+        self.config = config
+        self.csv_data_readers = csv_files
+
+    def with_config(self, config_path):
         self.config_path = config_path
-        self.config = None
-        if self.config_path:
-            with open(self.config_path, "r") as yamlfile:
-                self.config = yaml.safe_load(yamlfile)
+        with open(self.config_path, "r") as yamlfile:
+            logging.debug(f"Loading config: {self.config_path}")
+            self.config = yaml.safe_load(yamlfile)
+        return self
+
+    def with_csv_files(self, csv_file_paths):
+        return self
 
     def _csv_path_to_worksheet_title(self, csv_path) -> str:
         title = os.path.basename(csv_path)  # don't include full path, just file name
         title = os.path.splitext(title)[0]  # remove extension
         return title
+
+    def _set_column_width(self, sheet, column_name, width):
+        colindex = column_to_index(column_name)
+        logging.debug(
+            f'Sheet "{sheet.get_name()}" column "{column_name}" ({colindex}) to {width}px'
+        )
+        sheet.set_column_pixels(colindex, colindex, width)
 
     def build_openpyxl(self, csv_files, output_path=None):
         wb = openpyxl.Workbook()
@@ -95,11 +146,8 @@ class WorkbookFactory:
                     if "columns" in sheet_config:
                         for colname, colcfg in sheet_config["columns"].items():
                             if "width" in colcfg:
-                                width = int(colcfg["width"])
-                                colindex = column_to_index(colname)
-                                sheet.set_column_pixels(colindex, colindex, width)
-                                logging.debug(
-                                    f'Sheet "{worksheet_title}" column "{colname}" ({colindex}) to {width}px'
+                                self.handlers["set_column_width"](
+                                    sheet, colname, int(colcfg["width"])
                                 )
 
             # Write the data to the worksheet
@@ -140,6 +188,7 @@ def xl2csv(args):
             ),
             "w+",
             newline="",
+            encoding="utf-8",
         ) as f:
             logging.debug(f'Exporting worksheet "{sheet.title}"')
             c = csv.writer(f)

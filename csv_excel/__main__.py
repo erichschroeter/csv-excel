@@ -137,5 +137,55 @@ class RawTextArgumentDefaultsHelpFormatter(
     pass
 
 
+class CsvWorkbook:
+    def __init__(self, csv_paths=[], config=None):
+        self.csv_paths = csv_paths
+        self.config = config
+
+    def head(self, n=5):
+        for csv_path in self.csv_paths:
+            with open(csv_path, newline="") as csvfile:
+                csv_basename = os.path.basename(csv_path).split(".")[0]
+                r = csv.reader(csvfile)
+                rownum = 0
+                if self.config and "sheets" in self.config:
+                    if csv_basename in self.config["sheets"]:
+                        if "data_row" in self.config["sheets"][csv_basename]:
+                            for _ in range(
+                                self.config["sheets"][csv_basename]["data_row"] - 1
+                            ):
+                                next(r)
+                                rownum += 1
+                for i, row in enumerate(r):
+                    rownum += 1
+                    if i >= n:
+                        break
+                    yield csv_path, csv_basename, rownum, row
+                # yield csv_path
+                # print(f"CSV file: {csv_path}")
+
+
 if __name__ == "__main__":
-    App().run()
+    # App().run()
+    import csv
+    import yaml
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-c", "--config", help="The YAML config")
+    parser.add_argument(
+        "csv_files", nargs="+", help="The CSV files to include in the Excel file"
+    )
+
+    args = parser.parse_args()
+    _init_logger(level=logging.DEBUG)
+    config = None
+    with open(args.config, "r") as yamlfile:
+        logging.debug(f"Loading config: {args.config}")
+        config = yaml.safe_load(yamlfile)
+    logging.debug(f"Config = {config}")
+
+    wb = CsvWorkbook(args.csv_files, config)
+    for f in wb.head(1):
+        print(f)
+
+    # print(f"args: {args}")
