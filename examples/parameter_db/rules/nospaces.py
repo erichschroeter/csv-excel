@@ -25,5 +25,15 @@ def validate(workbook) -> list[RuleError]:
 
 
 @sheet_rule
-def validate_something():
+def validate_something_a():
+    pass
+
+
+@sheet_rule
+def validate_something_b():
+    pass
+
+
+@sheet_rule
+def validate_something_c():
     pass
