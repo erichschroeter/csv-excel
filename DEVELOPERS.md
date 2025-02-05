@@ -18,10 +18,11 @@
 title: Components
 ---
 flowchart LR
-    config --> Python
-    rules --> Python
-    worksheets --> Python
+    config ---> Python
+    rules ---> Python
+    worksheets ---> Python
     Python --> Excel
+    worksheets -. VB script on save .- Excel
 ```
 
 ## File overview
