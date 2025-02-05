@@ -196,7 +196,28 @@ def xl2csv(args):
                 c.writerow([cell.value for cell in row])
 
 
+import importlib.util
 import inspect
+
+WORKSHEET_RULE_ANNOTATION = "worksheet_rule"
+
+
+def collect_worksheet_rules(file_path):
+    """
+    Reads the file for functions annotated with @worksheet_rule.
+    """
+    # Load the modules from the file path
+    spec = importlib.util.spec_from_file_location("temp_module", file_path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+
+    # Collect all the functions annotated with @worksheet_rule
+    annotated_funcs = []
+    for _, obj in inspect.getmembers(module, inspect.isfunction):
+        if WORKSHEET_RULE_ANNOTATION in getattr(obj, "__annotations__", {}):
+            logging.debug(f"Found rule: {obj.__name__}")
+            annotated_funcs.append(obj)
+    return annotated_funcs
 
 
 def collect_sheet_rules(module, annotation):
@@ -207,6 +228,11 @@ def collect_sheet_rules(module, annotation):
             if annotation in getattr(obj, "__annotations__", {}):
                 annotated_funcs.append(obj)
     return annotated_funcs
+
+
+def worksheet_rule(func):
+    func.__annotations__[WORKSHEET_RULE_ANNOTATION] = True
+    return func
 
 
 def sheet_rule(func):
