@@ -95,6 +95,7 @@ python -m venv .venv
 . .venv/bin/activate
 pip install -r requirements-dev.txt
 python -m pytest
+# pytest -o log_cli=true --log-cli-level=DEBUG
 ```
 
 [top](#developers)
