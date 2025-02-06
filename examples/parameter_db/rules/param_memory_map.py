@@ -1,7 +1,11 @@
-from csv_excel.csv_excel import CsvRuleError
+import logging
+from csv_excel.csv_excel import CsvRuleError, workbook_rule
+
+COL_INDEX_ID = 0
 
 
-def validate(workbook):
+@workbook_rule
+def validate_param_id_exists(workbook):
     results = []
     ids = []
     if "Parameters" in workbook.sheetnames:
@@ -15,7 +19,12 @@ def validate(workbook):
             if rownum == 0:
                 continue
             if id.value not in ids:
-                results.append(
-                    CsvRuleError(__file__, rownum, 1, f'ID does not exist "{id.value}"')
+                e = CsvRuleError(
+                    __file__,
+                    rownum + 1,
+                    COL_INDEX_ID,
+                    f'ID does not exist "{id.value}"',
                 )
+                results.append(e)
+                logging.error(f"NV Memory: {e}")
     return results

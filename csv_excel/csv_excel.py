@@ -262,17 +262,13 @@ def csv_data_rule(*args, **kwargs):
 
 
 def workbook_rule(*args, **kwargs):
-    sheets = kwargs.get("sheets", None)
-
     if len(args) == 1 and callable(args[0]):
         func = args[0]
         func._is_workbook_rule = True
-        func._sheets = sheets
         return func
 
     def decorator(func):
         func._is_workbook_rule = True
-        func._sheets = sheets
         return func
 
     return decorator
@@ -295,16 +291,6 @@ def directory_to_module_path(directory_path):
     return module_path
 
 
-def validate_csv_data_rule(rule, row_data, row_num):
-    logging.info(f"Validating csv_data_rule: {rule.__name__}")
-    pass
-
-
-def validate_workbook_rule(rule, workbook):
-    logging.info(f"Validating workbook_rule: {rule.__name__}")
-    pass
-
-
 def validate(args):
     if not args.rules:
         return
@@ -323,16 +309,28 @@ def validate(args):
     # Validate CSV data rules.
     for module_path in modules:
         rules.extend(collect_csv_data_rules(module_path))
-    for rule in rules:
-        validate_csv_data_rule(rule, "", 0)
+    for file_path in args.csv_files:
+        for rule in rules:
+            if rule._applies_to is None or basename(file_path) in rule._applies_to:
+                with open(file_path, newline="") as f:
+                    reader = csv.DictReader(f)
+                    for row_num, row in enumerate(reader):
+                        try:
+                            errors = rule(row, row_num)
+                        except RuleError as e:
+                            logging.error(f"{file_path}: {e.message}")
 
     # Validate workbook rules.
     # Use openpyxl due to better support for reading data.
-    # wb = WorkbookFactory(args.config).build_openpyxl(args.csv_files)
+    wb = WorkbookFactory(args.config).build_openpyxl(args.csv_files)
+    rules = []
     for module_path in modules:
         rules.extend(collect_workbook_rules(module_path))
     for rule in rules:
-        validate_workbook_rule(rule, None)
+        try:
+            errors = rule(wb)
+        except RuleError as e:
+            logging.error(e.message)
 
     #     v = getattr(rule, "validate")
     #     result = v(wb)

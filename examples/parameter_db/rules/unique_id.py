@@ -1,3 +1,4 @@
+import logging
 from csv_excel.csv_excel import RuleError, workbook_rule
 
 
@@ -11,5 +12,7 @@ def validate_unique_id(workbook):
         ids.sort()
         for i in set(ids):
             if ids.count(i) > 1:
-                results.append(RuleError(__file__, f'not unique "{i}"'))
+                e = RuleError(__file__, f'not unique "{i}"')
+                results.append(e)
+                logging.error(f"Parameters: {e}")
     return results
