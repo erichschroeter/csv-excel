@@ -1,10 +1,12 @@
 import csv
+import glob
 import importlib
 import importlib.util
 import inspect
 import logging
 import openpyxl
 import os
+from os.path import dirname, basename, isfile, join
 from pathlib import Path
 import xlsxwriter
 from xlsxwriter.utility import xl_cell_to_rowcol
@@ -236,6 +238,23 @@ def collect_sheet_rules(module, annotation):
     return annotated_funcs
 
 
+def csv_data_rule(*args, **kwargs):
+    applies_to = kwargs.get("applies_to", None)
+
+    if len(args) == 1 and callable(args[0]):
+        func = args[0]
+        func._is_csv_data_rule = True
+        func._applies_to = applies_to
+        return func
+
+    def decorator(func):
+        func._is_csv_data_rule = True
+        func._applies_to = applies_to
+        return func
+
+    return decorator
+
+
 def worksheet_rule(*args, **kwargs):
     sheets = kwargs.get("sheets", None)
 
@@ -275,31 +294,46 @@ def directory_to_module_path(directory_path):
     return module_path
 
 
+def validate_rule(rule, workbook):
+    logging.info(f"Validating rule: {rule.__name__}")
+    pass
+
+
 def validate(args):
     # # Use openpyxl due to better support for reading data.
     # wb = WorkbookFactory(args.config).build_openpyxl(args.csv_files)
 
-    from os.path import dirname, basename, isfile, join
-    import glob
+    if not args.rules:
+        return
 
-    modules = sorted(glob.glob(join(args.rules_dir, "*.py")))
+    modules = []
+    for path in args.rules:
+        if os.path.isdir(path):
+            globbed = sorted(glob.glob(join(path, "*.py")))
+            modules.extend(globbed)
+        elif os.path.isfile(path):
+            modules.append(path)
+    modules = sorted(modules)
     logging.debug(f"Found modules: {modules}")
-    # Use the rules_dir as a python module and import all .py files, excluding __init__.py
-    rule_modules = [
-        # f"examples.parameter_db.{basename(dirname(args.rules_dir))}.{basename(f)[:-3]}"
-        f"{directory_to_module_path(args.rules_dir)}.{basename(f)[:-3]}"
-        for f in modules
-        if isfile(f) and not f.endswith("__init__.py")
-    ]
-    logging.debug(f"Checking rules: {rule_modules}")
-    results = []
-    for rule_module in rule_modules:
-        rule = importlib.import_module(rule_module)
-        sheet_rules = collect_sheet_rules(rule, "sheet_rule")
-        r_str = "\n".join([f"{r.__name__}" for r in sheet_rules])
-        logging.info(f"Checking rules: {rule}: {r_str}")
+
+    # modules = sorted(glob.glob(join(args.rules_dir, "*.py")))
+    # # Use the rules_dir as a python module and import all .py files, excluding __init__.py
+    # rule_modules = [
+    #     # f"examples.parameter_db.{basename(dirname(args.rules_dir))}.{basename(f)[:-3]}"
+    #     f"{directory_to_module_path(args.rules_dir)}.{basename(f)[:-3]}"
+    #     for f in modules
+    #     if isfile(f) and not f.endswith("__init__.py")
+    # ]
+    # logging.debug(f"Checking rules: {rule_modules}")
+    rules = []
+    for module_path in modules:
+        rules.extend(collect_worksheet_rules(module_path))
+        # r_str = "\n".join([f"{r.__name__}" for r in sheet_rules])
+        # logging.info(f"Checking rules: {rule}: {r_str}")
         # for f in collect_sheet_rules(m, "sheet_rule"):
         #     logging.info(f"found rule {f.__name__}")
+    for rule in rules:
+        validate_rule(rule, None)
     #     v = getattr(rule, "validate")
     #     result = v(wb)
     #     if result:

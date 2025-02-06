@@ -6,11 +6,12 @@ import textwrap
 from csv_excel.csv_excel import csv2xl, validate, xl2csv
 
 
-def dir_path(string):
-    if os.path.isdir(string):
-        return string
-    else:
-        raise NotADirectoryError(string)
+def validate_path(path):
+    if not os.path.exists(path):
+        raise argparse.ArgumentTypeError(f"'{path}' does not exist.")
+    if not (os.path.isfile(path) or os.path.isdir(path)):
+        raise argparse.ArgumentTypeError(f"'{path}' is not a valid file or directory.")
+    return path
 
 
 class App:
@@ -63,10 +64,11 @@ class App:
             "csv_files", nargs="*", help="The CSV files to include in the Excel file"
         )
         validate_parser.add_argument(
-            "--rules_dir",
-            type=dir_path,
-            default=os.path.join(os.getcwd(), "rules"),
-            help="Directory path to rules",
+            "-r",
+            "--rules",
+            type=validate_path,
+            action="append",
+            help="File with rules, or directory with files containing rules. Can be used multiple times.",
         )
         validate_parser.set_defaults(func=validate)
 
