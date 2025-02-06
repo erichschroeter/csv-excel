@@ -4,6 +4,7 @@ import importlib
 import importlib.util
 import inspect
 import logging
+import time
 import openpyxl
 import os
 from os.path import dirname, basename, isfile, join
@@ -83,6 +84,7 @@ class WorkbookFactory:
         # To support testability, provide a way to override config handlers.
         self.handlers = {
             "set_column_width": self._set_column_width,
+            "set_freeze_panes": self._set_freeze_panes,
         }
         self.config_path = None
         self.config = config
@@ -109,6 +111,12 @@ class WorkbookFactory:
             f'Sheet "{sheet.get_name()}" column "{column_name}" ({colindex}) to {width}px'
         )
         sheet.set_column_pixels(colindex, colindex, width)
+
+    def _set_freeze_panes(self, sheet, rowindex, colindex):
+        logging.debug(
+            f'Sheet "{sheet.get_name()}" freezing row "{rowindex}" column "{colindex}"'
+        )
+        sheet.freeze_panes(rowindex, colindex)
 
     def build_openpyxl(self, csv_files, output_path=None):
         wb = openpyxl.Workbook()
@@ -141,11 +149,8 @@ class WorkbookFactory:
         logging.debug(f'Packing VBA project into Excel file: "{vbaproject_path}"')
         wb.add_vba_project(vbaproject_path)
 
+        start_time = time.time()
         for csv_file in csv_files:
-            with open(csv_file, "r") as f:
-                reader = csv.reader(f)
-                csv_data = list(reader)
-
             worksheet_title = self._csv_path_to_worksheet_title(csv_file)
             sheet = wb.add_worksheet(name=worksheet_title)
             logging.debug(f'Added worksheet "{worksheet_title}"')
@@ -160,10 +165,29 @@ class WorkbookFactory:
                                 self.handlers["set_column_width"](
                                     sheet, colname, int(colcfg["width"])
                                 )
+                    if (
+                        "freeze_pane_row" in sheet_config
+                        and "freeze_pane_col" in sheet_config
+                    ):
+                        row = sheet_config["freeze_pane_row"]
+                        col = sheet_config["freeze_pane_col"]
+                        self.handlers["set_freeze_panes"](sheet, row, col)
+                    elif "freeze_pane_row" in sheet_config:
+                        row = sheet_config["freeze_pane_row"]
+                        self.handlers["set_freeze_panes"](sheet, row, 0)
+                    elif "freeze_pane_col" in sheet_config:
+                        col = sheet_config["freeze_pane_col"]
+                        self.handlers["set_freeze_panes"](sheet, 1, col)
+            with open(csv_file, "r") as f:
+                reader = csv.reader(f)
+                csv_data = list(reader)
 
             # Write the data to the worksheet
             for row, data in enumerate(csv_data):
                 sheet.write_row(row, 0, data)
+        end_time = time.time()
+        elapsed_time_ms = (end_time - start_time) * 1_000
+        logging.info(f"Elapsed time: {elapsed_time_ms} ms")
 
         return wb
 
@@ -176,7 +200,11 @@ def csv2xl(args):
         args:  The command line args.
     """
     # Use xlsxwriter due to support for vbaProject macros.
-    wb = WorkbookFactory(args.config).build_xlsxwriter(args.csv_files, args.output)
+    wb = (
+        WorkbookFactory()
+        .with_config(args.config)
+        .build_xlsxwriter(args.csv_files, args.output)
+    )
     # Save the workbook
     wb.close()
 

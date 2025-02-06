@@ -1,5 +1,12 @@
 sheets:
   Parameters:
+    data_row_start: 1
+    # zero-based row index
+    # For example, if you want to freeze the first row, set this to 1.
+    freeze_pane_row: 1
+    # zero-based col index
+    # For example, if you want to freeze the first column, set this to 1.
+    freeze_pane_col: 1
     columns:
       A:
         width: 200
