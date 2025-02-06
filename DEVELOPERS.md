@@ -25,6 +25,14 @@ flowchart LR
     worksheets -. VB script on save .- Excel
 ```
 
+Validating the CSV files against rules must take a few scenarios into account.
+
+1. Isolated CSV data (e.g. a column `A` value has a specific prefix, such as `"TXT_"`)
+   * lines can be processed individually
+2. Correlated CSV data (e.g. `B.csv` depends on data within `A.csv`)
+   * lines cannot be processed individually
+   * entire data set for each file must be available for the validation logic
+
 ## File overview
 
 ### `MANIFEST.in`
