@@ -1,5 +1,7 @@
 import csv
 import importlib
+import importlib.util
+import inspect
 import logging
 import openpyxl
 import os
@@ -7,6 +9,8 @@ from pathlib import Path
 import xlsxwriter
 from xlsxwriter.utility import xl_cell_to_rowcol
 import yaml
+
+WORKSHEET_RULE_ANNOTATION = "worksheet_rule"
 
 
 def column_to_index(col_str):
@@ -157,6 +161,14 @@ class WorkbookFactory:
         return wb
 
 
+def validate_data_isolated(file_path):
+    pass
+
+
+def validate_data_correlated(file_path):
+    pass
+
+
 def csv2xl(args):
     """
     Generates or updates an Excel file from multiple CSV files.
@@ -196,12 +208,6 @@ def xl2csv(args):
                 c.writerow([cell.value for cell in row])
 
 
-import importlib.util
-import inspect
-
-WORKSHEET_RULE_ANNOTATION = "worksheet_rule"
-
-
 def collect_worksheet_rules(file_path):
     """
     Reads the file for functions annotated with @worksheet_rule.
@@ -212,12 +218,12 @@ def collect_worksheet_rules(file_path):
     spec.loader.exec_module(module)
 
     # Collect all the functions annotated with @worksheet_rule
-    annotated_funcs = []
+    rules = []
     for _, obj in inspect.getmembers(module, inspect.isfunction):
-        if WORKSHEET_RULE_ANNOTATION in getattr(obj, "__annotations__", {}):
+        if hasattr(obj, "_is_worksheet_rule") and obj._is_worksheet_rule:
             logging.debug(f"Found rule: {obj.__name__}")
-            annotated_funcs.append(obj)
-    return annotated_funcs
+            rules.append(obj)
+    return rules
 
 
 def collect_sheet_rules(module, annotation):
@@ -230,9 +236,21 @@ def collect_sheet_rules(module, annotation):
     return annotated_funcs
 
 
-def worksheet_rule(func):
-    func.__annotations__[WORKSHEET_RULE_ANNOTATION] = True
-    return func
+def worksheet_rule(*args, **kwargs):
+    sheets = kwargs.get("sheets", None)
+
+    if len(args) == 1 and callable(args[0]):
+        func = args[0]
+        func._is_worksheet_rule = True
+        func._sheets = sheets
+        return func
+
+    def decorator(func):
+        func._is_worksheet_rule = True
+        func._sheets = sheets
+        return func
+
+    return decorator
 
 
 def sheet_rule(func):
