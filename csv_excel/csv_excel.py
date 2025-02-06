@@ -29,14 +29,21 @@ def column_to_index(col_str):
 
 
 class RuleError(Exception):
-    def __init__(self, rule_file, message, *args: object) -> None:
-        self.message = f"{os.path.basename(rule_file)}: {message}"
-        super().__init__(message, *args)
+    pass
 
 
-class CsvRuleError(RuleError):
-    def __init__(self, rule_file, row, col, message, *args: object) -> None:
-        super().__init__(rule_file, f"(row: {row}, col: {col}): {message}", *args)
+class CsvDataError(RuleError):
+    def __init__(self, rule, filename, row, col, message):
+        super().__init__(
+            f"{rule} -- file: '{filename}', row: {row}, col: {col} --> {message}"
+        )
+
+
+class WorkbookError(RuleError):
+    def __init__(self, rule, sheet, row, col, message):
+        super().__init__(
+            f"{rule} -- sheet: '{sheet}': row: {row}, col: {col} --> {message}"
+        )
 
 
 class CsvSheet:
@@ -159,14 +166,6 @@ class WorkbookFactory:
                 sheet.write_row(row, 0, data)
 
         return wb
-
-
-def validate_data_isolated(file_path):
-    pass
-
-
-def validate_data_correlated(file_path):
-    pass
 
 
 def csv2xl(args):
@@ -316,7 +315,7 @@ def validate(args):
                     reader = csv.DictReader(f)
                     for row_num, row in enumerate(reader):
                         try:
-                            errors = rule(row, row_num)
+                            errors = rule(file_path, row, row_num)
                         except RuleError as e:
                             logging.error(f"{file_path}: {e.message}")
 
