@@ -84,6 +84,7 @@ class WorkbookFactory:
         # To support testability, provide a way to override config handlers.
         self.handlers = {
             "set_column_width": self._set_column_width,
+            "set_row_height": self._set_row_height,
             "set_freeze_panes": self._set_freeze_panes,
         }
         self.config_path = None
@@ -111,6 +112,10 @@ class WorkbookFactory:
             f'Sheet "{sheet.get_name()}" column "{column_name}" ({colindex}) to {width}px'
         )
         sheet.set_column_pixels(colindex, colindex, width)
+
+    def _set_row_height(self, sheet, rowidx, height):
+        logging.debug(f'Sheet "{sheet.get_name()}" row "{rowidx}" to {height}px')
+        sheet.set_row_pixels(rowidx, height)
 
     def _set_freeze_panes(self, sheet, rowindex, colindex):
         logging.debug(
@@ -155,10 +160,24 @@ class WorkbookFactory:
             sheet = wb.add_worksheet(name=worksheet_title)
             logging.debug(f'Added worksheet "{worksheet_title}"')
 
+            # Configuration scenarios
+            # 1. No config file
+            # 2. Entire col
+            # 3. Entire row
+            # 4. Entire col & row
+            # 5. Specific cell
+
             # Apply any config specifications.
             if self.config:
+                logging.warning(self.config)
                 if worksheet_title in self.config["sheets"]:
                     sheet_config = self.config["sheets"][worksheet_title]
+                    if "rows" in sheet_config:
+                        for rowname, rowcfg in sheet_config["rows"].items():
+                            if "height" in rowcfg:
+                                self.handlers["set_row_height"](
+                                    sheet, rowname, int(rowcfg["height"])
+                                )
                     if "columns" in sheet_config:
                         for colname, colcfg in sheet_config["columns"].items():
                             if "width" in colcfg:
@@ -178,13 +197,12 @@ class WorkbookFactory:
                     elif "freeze_pane_col" in sheet_config:
                         col = sheet_config["freeze_pane_col"]
                         self.handlers["set_freeze_panes"](sheet, 1, col)
+
             with open(csv_file, "r") as f:
                 reader = csv.reader(f)
-                csv_data = list(reader)
-
-            # Write the data to the worksheet
-            for row, data in enumerate(csv_data):
-                sheet.write_row(row, 0, data)
+                for rowidx, row in enumerate(reader):
+                    for colidx, cell in enumerate(row):
+                        sheet.write(rowidx, colidx, cell)
         end_time = time.time()
         elapsed_time_ms = (end_time - start_time) * 1_000
         logging.info(f"Elapsed time: {elapsed_time_ms} ms")

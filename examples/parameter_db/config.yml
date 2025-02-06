@@ -12,6 +12,16 @@ sheets:
         width: 200
       B:
         width: 100
+    rows:
+      0:
+        height: 50
+        format:
+          bold: true
+          italic: true
+          underline: true
+          font_size: 12
+          font_color: red
+          background_color: yellow
   NV Memory:
     columns:
       A:
