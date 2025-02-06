@@ -3,7 +3,7 @@ import tempfile
 import unittest
 
 from csv_excel.csv_excel import (
-    collect_worksheet_rules,
+    collect_workbook_rules,
     column_to_index,
 )
 
@@ -30,17 +30,17 @@ class TestCollectWorksheetRulesWithFiles(unittest.TestCase):
         )
         # We have to redefine in the decorator since importing the actual module unit tests is complicated.
         worksheet_annotation = """
-def worksheet_rule(*args, **kwargs):
+def workbook_rule(*args, **kwargs):
     sheets = kwargs.get("sheets", None)
 
     if len(args) == 1 and callable(args[0]):
         func = args[0]
-        func._is_worksheet_rule = True
+        func._is_workbook_rule = True
         func._sheets = sheets
         return func
 
     def decorator(func):
-        func._is_worksheet_rule = True
+        func._is_workbook_rule = True
         func._sheets = sheets
         return func
 
@@ -54,36 +54,36 @@ def worksheet_rule(*args, **kwargs):
 
     def test_finds_one_with_attributes(self):
         content = """
-@worksheet_rule(sheets=["A.csv", "B.csv"])
+@workbook_rule(sheets=["A.csv", "B.csv"])
 def validate_something_a(reader):
     pass
 """
         temp_file = self.create_temp_file_with_content(content)
-        collected = collect_worksheet_rules(temp_file.name)
+        collected = collect_workbook_rules(temp_file.name)
         self.assertEqual(1, len(collected))
         self.assertEqual(["A.csv", "B.csv"], collected[0]._sheets)
 
     def test_finds_one(self):
         content = """
-@worksheet_rule
+@workbook_rule
 def validate_something_a(reader):
     pass
 """
         temp_file = self.create_temp_file_with_content(content)
-        collected = collect_worksheet_rules(temp_file.name)
+        collected = collect_workbook_rules(temp_file.name)
         self.assertEqual(1, len(collected))
         self.assertEqual("validate_something_a", collected[0].__name__)
 
     def test_finds_two(self):
         content = """
-@worksheet_rule
+@workbook_rule
 def validate_something_a(reader):
     pass
 
-@worksheet_rule
+@workbook_rule
 def validate_something_b(reader):
     pass
 """
         temp_file = self.create_temp_file_with_content(content)
-        collected = collect_worksheet_rules(temp_file.name)
+        collected = collect_workbook_rules(temp_file.name)
         self.assertEqual(2, len(collected))

@@ -12,8 +12,6 @@ import xlsxwriter
 from xlsxwriter.utility import xl_cell_to_rowcol
 import yaml
 
-WORKSHEET_RULE_ANNOTATION = "worksheet_rule"
-
 
 def column_to_index(col_str):
     """
@@ -210,19 +208,37 @@ def xl2csv(args):
                 c.writerow([cell.value for cell in row])
 
 
-def collect_worksheet_rules(file_path):
+def collect_csv_data_rules(file_path):
     """
-    Reads the file for functions annotated with @worksheet_rule.
+    Reads the file for functions annotated with @csv_data_rule.
     """
     # Load the modules from the file path
     spec = importlib.util.spec_from_file_location("temp_module", file_path)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
 
-    # Collect all the functions annotated with @worksheet_rule
+    # Collect all the functions annotated with @csv_data_rule
     rules = []
     for _, obj in inspect.getmembers(module, inspect.isfunction):
-        if hasattr(obj, "_is_worksheet_rule") and obj._is_worksheet_rule:
+        if hasattr(obj, "_is_csv_data_rule") and obj._is_csv_data_rule:
+            logging.debug(f"Found rule: {obj.__name__}")
+            rules.append(obj)
+    return rules
+
+
+def collect_workbook_rules(file_path):
+    """
+    Reads the file for functions annotated with @workbook_rule.
+    """
+    # Load the modules from the file path
+    spec = importlib.util.spec_from_file_location("temp_module", file_path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+
+    # Collect all the functions annotated with @workbook_rule
+    rules = []
+    for _, obj in inspect.getmembers(module, inspect.isfunction):
+        if hasattr(obj, "_is_workbook_rule") and obj._is_workbook_rule:
             logging.debug(f"Found rule: {obj.__name__}")
             rules.append(obj)
     return rules
@@ -255,17 +271,17 @@ def csv_data_rule(*args, **kwargs):
     return decorator
 
 
-def worksheet_rule(*args, **kwargs):
+def workbook_rule(*args, **kwargs):
     sheets = kwargs.get("sheets", None)
 
     if len(args) == 1 and callable(args[0]):
         func = args[0]
-        func._is_worksheet_rule = True
+        func._is_workbook_rule = True
         func._sheets = sheets
         return func
 
     def decorator(func):
-        func._is_worksheet_rule = True
+        func._is_workbook_rule = True
         func._sheets = sheets
         return func
 
@@ -327,7 +343,7 @@ def validate(args):
     # logging.debug(f"Checking rules: {rule_modules}")
     rules = []
     for module_path in modules:
-        rules.extend(collect_worksheet_rules(module_path))
+        rules.extend(collect_workbook_rules(module_path))
         # r_str = "\n".join([f"{r.__name__}" for r in sheet_rules])
         # logging.info(f"Checking rules: {rule}: {r_str}")
         # for f in collect_sheet_rules(m, "sheet_rule"):

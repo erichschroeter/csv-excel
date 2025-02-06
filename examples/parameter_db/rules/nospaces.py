@@ -1,7 +1,7 @@
 import re
 
 from csv_excel.csv_excel import CsvRuleError, RuleError
-from csv_excel.csv_excel import worksheet_rule
+from csv_excel.csv_excel import workbook_rule
 
 CPP_IDENTIFIER_REGEX = r"^[a-zA-Z_]+[a-zA-Z0-9_]*$"
 CPP_IDENTIFIER_PATTERN = re.compile(CPP_IDENTIFIER_REGEX)
@@ -32,7 +32,7 @@ def validate_variable_contains_no_spaces(row_data, row_num):
         )
 
 
-@worksheet_rule(sheets=["Parameters.csv"])
+@workbook_rule(sheets=["Parameters.csv"])
 def validate_variable_contains_no_spaces(reader):
     # Skip the CSV header
     next(reader)
