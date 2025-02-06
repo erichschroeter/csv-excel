@@ -1,7 +1,8 @@
-from csv_excel.csv_excel import RuleError
+from csv_excel.csv_excel import RuleError, workbook_rule
 
 
-def validate(workbook) -> list[RuleError]:
+@workbook_rule
+def validate_unique_id(workbook):
     results = []
     if "Parameters" in workbook.sheetnames:
         sheet = workbook["Parameters"]

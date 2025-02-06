@@ -221,7 +221,7 @@ def collect_csv_data_rules(file_path):
     rules = []
     for _, obj in inspect.getmembers(module, inspect.isfunction):
         if hasattr(obj, "_is_csv_data_rule") and obj._is_csv_data_rule:
-            logging.debug(f"Found rule: {obj.__name__}")
+            logging.debug(f"Found csv_data_rule in {file_path}: {obj.__name__}")
             rules.append(obj)
     return rules
 
@@ -239,19 +239,9 @@ def collect_workbook_rules(file_path):
     rules = []
     for _, obj in inspect.getmembers(module, inspect.isfunction):
         if hasattr(obj, "_is_workbook_rule") and obj._is_workbook_rule:
-            logging.debug(f"Found rule: {obj.__name__}")
+            logging.debug(f"Found workbook rule in {file_path}: {obj.__name__}")
             rules.append(obj)
     return rules
-
-
-def collect_sheet_rules(module, annotation):
-    annotated_funcs = []
-    for name, obj in inspect.getmembers(module):
-        logging.debug(f"Checking {name} :: {obj}")
-        if inspect.isfunction(obj):
-            if annotation in getattr(obj, "__annotations__", {}):
-                annotated_funcs.append(obj)
-    return annotated_funcs
 
 
 def csv_data_rule(*args, **kwargs):
@@ -288,11 +278,6 @@ def workbook_rule(*args, **kwargs):
     return decorator
 
 
-def sheet_rule(func):
-    func.__annotations__["sheet_rule"] = True
-    return func
-
-
 def directory_to_module_path(directory_path):
     # Normalize the path to use the correct OS-specific separator
     normalized_path = os.path.normpath(directory_path)
@@ -310,15 +295,17 @@ def directory_to_module_path(directory_path):
     return module_path
 
 
-def validate_rule(rule, workbook):
-    logging.info(f"Validating rule: {rule.__name__}")
+def validate_csv_data_rule(rule, row_data, row_num):
+    logging.info(f"Validating csv_data_rule: {rule.__name__}")
+    pass
+
+
+def validate_workbook_rule(rule, workbook):
+    logging.info(f"Validating workbook_rule: {rule.__name__}")
     pass
 
 
 def validate(args):
-    # # Use openpyxl due to better support for reading data.
-    # wb = WorkbookFactory(args.config).build_openpyxl(args.csv_files)
-
     if not args.rules:
         return
 
@@ -332,24 +319,21 @@ def validate(args):
     modules = sorted(modules)
     logging.debug(f"Found modules: {modules}")
 
-    # modules = sorted(glob.glob(join(args.rules_dir, "*.py")))
-    # # Use the rules_dir as a python module and import all .py files, excluding __init__.py
-    # rule_modules = [
-    #     # f"examples.parameter_db.{basename(dirname(args.rules_dir))}.{basename(f)[:-3]}"
-    #     f"{directory_to_module_path(args.rules_dir)}.{basename(f)[:-3]}"
-    #     for f in modules
-    #     if isfile(f) and not f.endswith("__init__.py")
-    # ]
-    # logging.debug(f"Checking rules: {rule_modules}")
     rules = []
+    # Validate CSV data rules.
+    for module_path in modules:
+        rules.extend(collect_csv_data_rules(module_path))
+    for rule in rules:
+        validate_csv_data_rule(rule, "", 0)
+
+    # Validate workbook rules.
+    # Use openpyxl due to better support for reading data.
+    # wb = WorkbookFactory(args.config).build_openpyxl(args.csv_files)
     for module_path in modules:
         rules.extend(collect_workbook_rules(module_path))
-        # r_str = "\n".join([f"{r.__name__}" for r in sheet_rules])
-        # logging.info(f"Checking rules: {rule}: {r_str}")
-        # for f in collect_sheet_rules(m, "sheet_rule"):
-        #     logging.info(f"found rule {f.__name__}")
     for rule in rules:
-        validate_rule(rule, None)
+        validate_workbook_rule(rule, None)
+
     #     v = getattr(rule, "validate")
     #     result = v(wb)
     #     if result:
