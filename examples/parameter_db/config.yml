@@ -10,6 +10,13 @@ sheets:
     columns:
       A:
         width: 200
+        format:
+          bold: true
+          italic: true
+          underline: true
+          font_size: 8
+          font_color: blue
+          bg_color: white
       B:
         width: 100
     rows:
@@ -21,7 +28,7 @@ sheets:
           underline: true
           font_size: 12
           font_color: red
-          background_color: yellow
+          bg_color: yellow
   NV Memory:
     columns:
       A:

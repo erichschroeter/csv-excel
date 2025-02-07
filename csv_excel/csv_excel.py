@@ -3,6 +3,7 @@ import glob
 import importlib
 import importlib.util
 import inspect
+import json
 import logging
 import time
 import openpyxl
@@ -113,9 +114,9 @@ class WorkbookFactory:
         )
         sheet.set_column_pixels(colindex, colindex, width)
 
-    def _set_row_height(self, sheet, rowidx, height):
-        logging.debug(f'Sheet "{sheet.get_name()}" row "{rowidx}" to {height}px')
-        sheet.set_row_pixels(rowidx, height)
+    def _set_row_height(self, sheet, rowidx, height_pixels=20, format=None):
+        logging.debug(f'Sheet "{sheet.get_name()}" row "{rowidx}" to {height_pixels}px')
+        sheet.set_row_pixels(rowidx, height_pixels, format)
 
     def _set_freeze_panes(self, sheet, rowindex, colindex):
         logging.debug(
@@ -173,10 +174,20 @@ class WorkbookFactory:
                 if worksheet_title in self.config["sheets"]:
                     sheet_config = self.config["sheets"][worksheet_title]
                     if "rows" in sheet_config:
-                        for rowname, rowcfg in sheet_config["rows"].items():
-                            if "height" in rowcfg:
+                        for rowidx, rowcfg in sheet_config["rows"].items():
+                            if "height" in rowcfg and "format" in rowcfg:
+                                fmt = wb.add_format(rowcfg["format"])
                                 self.handlers["set_row_height"](
-                                    sheet, rowname, int(rowcfg["height"])
+                                    sheet, rowidx, int(rowcfg["height"]), fmt
+                                )
+                            elif "height" in rowcfg:
+                                self.handlers["set_row_height"](
+                                    sheet, rowidx, int(rowcfg["height"])
+                                )
+                            elif "format" in rowcfg:
+                                fmt = wb.add_format(rowcfg["format"])
+                                self.handlers["set_row_height"](
+                                    sheet=sheet, rowidx=rowidx, format=fmt
                                 )
                     if "columns" in sheet_config:
                         for colname, colcfg in sheet_config["columns"].items():
@@ -367,7 +378,7 @@ def validate(args):
 
     # Validate workbook rules.
     # Use openpyxl due to better support for reading data.
-    wb = WorkbookFactory(args.config).build_openpyxl(args.csv_files)
+    wb = WorkbookFactory().with_config(args.config).build_openpyxl(args.csv_files)
     rules = []
     for module_path in modules:
         rules.extend(collect_workbook_rules(module_path))
