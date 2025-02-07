@@ -7,6 +7,7 @@ import json
 import logging
 import time
 import openpyxl
+from openpyxl.styles import Font, PatternFill
 import os
 from os.path import dirname, basename, isfile, join
 from pathlib import Path
@@ -48,36 +49,96 @@ class WorkbookError(RuleError):
         )
 
 
-class CsvSheet:
-    def __init__(self, path=None, data_row=1, freeze_pane_row=0, freeze_pane_col=0):
-        self.path = path
-        self.data_row = data_row
-        self.freeze_pane_row = freeze_pane_row
-        self.freeze_pane_col = freeze_pane_col
-        self.reader = None
-        self._data = ["A", "B", "C", "D", "E"]
+class ExcelStrategy:
+    def create_workbook(self):
+        raise NotImplementedError
 
-    def data(self):
-        for row in self._data:
-            yield row
-        # if self.path:
-        #     with open(self.path, newline="") as csvfile:
-        #         csv_basename = os.path.basename(self.path).split(".")[0]
-        #         r = csv.reader(csvfile)
-        #         rownum = 0
-        #         if self.config and "sheets" in self.config:
-        #             if csv_basename in self.config["sheets"]:
-        #                 if "data_row" in self.config["sheets"][csv_basename]:
-        #                     for _ in range(
-        #                         self.config["sheets"][csv_basename]["data_row"] - 1
-        #                     ):
-        #                         next(r)
-        #                         rownum += 1
-        #         for i, row in enumerate(r):
-        #             rownum += 1
-        #             if i >= n:
-        #                 break
-        #             yield self.path, csv_basename, rownum, row
+    def add_worksheet(self, workbook, name):
+        raise NotImplementedError
+
+    def create_format(self, workbook, **kwargs):
+        raise NotImplementedError
+
+    def write_data(self, worksheet, row, col, data, cell_format):
+        raise NotImplementedError
+
+    def save(self, workbook, filename):
+        raise NotImplementedError
+
+
+class XlsxWriterStrategy(ExcelStrategy):
+    def create_workbook(self):
+        return xlsxwriter.Workbook()
+
+    def add_worksheet(self, workbook, name):
+        return workbook.add_worksheet(name)
+
+    def create_format(self, workbook, **kwargs):
+        return workbook.add_format(kwargs)
+
+    def write_data(self, worksheet, row, col, data, cell_format):
+        worksheet.write(row, col, data, cell_format)
+
+    def save(self, workbook, filename):
+        workbook.close()
+
+
+class OpenPyxlStrategy(ExcelStrategy):
+    def create_workbook(self):
+        return openpyxl.Workbook()
+
+    def add_worksheet(self, workbook, name):
+        return workbook.create_sheet(title=name)
+
+    def create_format(self, workbook, **kwargs):
+        cell_format = {}
+        if "font_color" in kwargs:
+            cell_format["font"] = Font(color=kwargs["font_color"])
+        if "bg_color" in kwargs:
+            cell_format["fill"] = PatternFill(
+                start_color=kwargs["bg_color"],
+                end_color=kwargs["bg_color"],
+                fill_type="solid",
+            )
+        return cell_format
+
+    def write_data(self, worksheet, row, col, data, cell_format):
+        cell = worksheet.cell(row=row + 1, column=col + 1, value=data)
+        if cell_format:
+            if "font" in cell_format:
+                cell.font = cell_format["font"]
+            if "fill" in cell_format:
+                cell.fill = cell_format["fill"]
+
+    def save(self, workbook, filename):
+        workbook.save(filename)
+
+
+class ExcelWorkbook:
+    def __init__(self, strategy: ExcelStrategy):
+        self.strategy = strategy
+        self.workbook = self.strategy.create_workbook()
+        self.worksheets = {}
+        self.formats = {}
+
+    def add_worksheet(self, name=None):
+        worksheet = self.strategy.add_worksheet(self.workbook, name)
+        self.worksheets[name] = worksheet
+        return worksheet
+
+    def create_format(self, **kwargs):
+        cell_format = self.strategy.create_format(self.workbook, **kwargs)
+        self.formats[tuple(kwargs.items())] = cell_format
+        return cell_format
+
+    def write_data(self, worksheet_name, row, col, data, cell_format=None):
+        worksheet = self.worksheets.get(worksheet_name)
+        if not worksheet:
+            raise ValueError(f"Worksheet {worksheet_name} does not exist.")
+        self.strategy.write_data(worksheet, row, col, data, cell_format)
+
+    def save(self, filename):
+        self.strategy.save(self.workbook, filename)
 
 
 class WorkbookFactory:
