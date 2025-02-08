@@ -49,6 +49,12 @@ class WorkbookError(RuleError):
         )
 
 
+def read_config(config_path):
+    with open(config_path, "r") as yamlfile:
+        logging.debug(f"Loading config: {config_path}")
+        return yaml.safe_load(yamlfile)
+
+
 class ExcelStrategy:
     def create_workbook(self):
         raise NotImplementedError
@@ -406,6 +412,10 @@ def directory_to_module_path(directory_path):
     module_path = ".".join(path_components)
 
     return module_path
+
+
+def validate_rules(rules, workbook):
+    pass
 
 
 def validate(args):
